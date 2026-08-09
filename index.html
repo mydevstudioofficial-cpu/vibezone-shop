@@ -1,1 +1,1928 @@
 
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Vibe Zone</title>
+
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#FF7500">
+<link rel="icon" type="image/png" sizes="32x32" href="icon-32.png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Vibe Zone">
+
+<!-- Social share preview (same for every link — see note below about per-product previews) -->
+<meta property="og:title" content="Vibe Zone — Own Your Style. Feel The Vibe.">
+<meta property="og:description" content="Bangladesh-er streetwear shopping app — drop shoulder, shirts, watches, sneakers ar aro onek kichu.">
+<meta property="og:image" content="icon-512.png">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Space+Mono:wght@400;700&family=DM+Sans:wght@400;500;700;900&display=swap" rel="stylesheet">
+
+<!-- Firebase (compat SDK, no build step needed) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js" crossorigin="anonymous" onerror="document.getElementById('root').innerHTML='<div style=\'font-family:monospace;padding:24px;color:#b02a2a\'>⚠ Could not load Firebase (firebase-app-compat.js) from gstatic.com — check internet connection or if this domain is blocked on your network.</div>'"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js" crossorigin="anonymous" onerror="document.getElementById('root').innerHTML='<div style=\'font-family:monospace;padding:24px;color:#b02a2a\'>⚠ Could not load Firebase Database SDK from gstatic.com.</div>'"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js" crossorigin="anonymous" onerror="document.getElementById('root').innerHTML='<div style=\'font-family:monospace;padding:24px;color:#b02a2a\'>⚠ Could not load Firebase Auth SDK from gstatic.com.</div>'"></script>
+
+<!-- EmailJS (free tier order confirmation email) -->
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+
+<!-- React (UMD, no build step needed) -->
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin onerror="document.getElementById('root').innerHTML='<div style=\'font-family:monospace;padding:24px;color:#b02a2a\'>⚠ Could not load React from unpkg.com — check internet connection or if this domain is blocked on your network.</div>'"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin onerror="document.getElementById('root').innerHTML='<div style=\'font-family:monospace;padding:24px;color:#b02a2a\'>⚠ Could not load ReactDOM from unpkg.com.</div>'"></script>
+
+<style>
+  *{box-sizing:border-box;}
+  body{margin:0; background:#F4F1E9;}
+  ::selection{background:#FF7500; color:#fff;}
+  #boot-error{display:none; position:fixed; inset:0; background:#fff; color:#141412; font-family:monospace; font-size:13px; padding:24px; z-index:9999; overflow:auto; white-space:pre-wrap; line-height:1.6;}
+  .vz-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:10px; padding-bottom:60px;}
+  @media (min-width:600px){ .vz-grid{grid-template-columns:repeat(3,1fr); gap:14px;} }
+  @media (min-width:900px){ .vz-grid{grid-template-columns:repeat(4,1fr); gap:18px;} }
+  .vz-pd-grid{display:grid; grid-template-columns:1fr; gap:24px;}
+  @media (min-width:760px){ .vz-pd-grid{grid-template-columns:1fr 1fr; gap:40px;} }
+  .vz-load-logo{animation:vzPulse 1.5s infinite;}
+  .vz-load-bar{animation:vzLoad 2.5s ease-out forwards;}
+  @keyframes vzPulse{0%{transform:scale(1);}50%{transform:scale(1.08);}100%{transform:scale(1);}}
+  @keyframes vzLoad{from{width:0%;}to{width:100%;}}
+  @keyframes vzSignal{0%,100%{transform:scale(1); opacity:.6;}50%{transform:scale(1.15); opacity:1;}}
+  .vz-wifi{animation:vzSignal 1.5s infinite; display:inline-block;}
+</style>
+</head>
+<body>
+<div id="root"><div style="font-family:monospace;font-size:13px;padding:24px;">Loading Vibe Zone…</div></div>
+<div id="boot-error"></div>
+
+<script>
+  // Surface any script error on screen instead of a silent blank page
+  window.addEventListener("error", function (e) {
+    var box = document.getElementById("boot-error");
+    box.style.display = "block";
+    box.textContent = "⚠ আপনার নেটওয়ার্ক নেই! আবার চেষ্টা করুন।\n\n" +
+      (e.error && e.error.stack ? e.error.stack : e.message) +
+      "\n\nCheck: 1) internet connection 2) that script tags for Firebase/React above loaded (open browser console, F12) 3) Firebase Realtime Database rules.";
+  });
+</script>
+
+<script>
+  // ---- YOUR FIREBASE PROJECT ----
+  const firebaseConfig = {
+    apiKey: "AIzaSyAnP7vCDRoRc_mCCTI5pyW3lLDTb2aXTiE",
+    authDomain: "vibe-zone-2c278.firebaseapp.com",
+    databaseURL: "https://vibe-zone-2c278-default-rtdb.firebaseio.com",
+    projectId: "vibe-zone-2c278",
+    storageBucket: "vibe-zone-2c278.firebasestorage.app",
+    messagingSenderId: "77207661953",
+    appId: "1:77207661953:web:82bb57ada928e3d52f0c80",
+    measurementId: "G-3MM8FE611R"
+  };
+  try {
+    firebase.initializeApp(firebaseConfig);
+  } catch (err) {
+    document.getElementById("boot-error").style.display = "block";
+    document.getElementById("boot-error").textContent = "⚠ Firebase failed to initialize:\n\n" + err.message;
+  }
+  const db = firebase.database();
+  let auth = null;
+  try {
+    auth = firebase.auth();
+  } catch (err) {
+    console.error("Firebase Auth init failed (Google Sign-In will be unavailable):", err);
+  }
+</script>
+
+<script>
+  // Auth SDK crashes to a "Script error." with no detail when this file
+  // loads without CORS credentials in some restricted viewers (e.g. Chrome's
+  // content:// downloaded-file viewer). Deploy to a real https:// host
+  // (Netlify) to get accurate error messages there.
+</script>
+
+<script>
+"use strict";
+const { useState, useEffect } = React;
+/* ================= constants ================= */
+/* Admin/staff access is now via real Firebase login (email+password) — no
+   password is ever stored in this file, so nobody can find it by viewing source.
+   Full admin = this email. Staff (product-add only) = that email.
+   Change these to the real accounts, then create each one in
+   Firebase Console -> Authentication -> Users -> Add User. */
+const ADMIN_EMAIL = "apurb190@gmail.com";
+const STAFF_EMAIL = "vibezone.staff@gmail.com";
+const defaultCatalog = {
+    shopName: "Vibe Zone",
+    tagline: "Own Your Style. Feel The Vibe.",
+    deliveryCharge: 100,
+    logo: "",
+    contact: {
+        email: "apurb190@gmail.com",
+        phone: "+8801332756365",
+        address: "Thakurgaon Sadar, Thakurgaon",
+        facebook: "",
+        instagram: "",
+    },
+    pages: {
+        about: "Vibe Zone — Thakurgaon theke shuru howa ekta Bangladeshi streetwear brand. Amra premium quality, 100% cotton fabric-e toiri drop shoulder o oversized fit niye kaj kori, ar shara Bangladesh-e home delivery kori.",
+        privacy: "Amra apnar personal information (naam, thikana, phone number) shudhu order process ar delivery-r jonno babohar kori. Kono third party-r kache apnar tothyo bikri kora hoy na.",
+        terms: "Website-e order dile customer ei terms mene nen: product availability stock shapekkhe, price change hote pare age na bole, order confirm howar por cancel korte hole amader shathe jogajog korte hobe.",
+        returns: "Product hate paoar 24 ghontar moddhe kono shomossha thakle amader shathe jogajog korun. Bebohar kora hoyni emon product, original packaging shoho return/exchange kora jabe. Delivery charge non-refundable.",
+    },
+    paymentNumbers: { bkash: "01309664513", nagad: "01309664513", rocket: "01309664513" },
+    coupons: [
+        { id: "cp1", code: "WELCOME50", type: "flat", value: 50, active: true },
+    ],
+    emailjs: { serviceId: "", templateId: "", publicKey: "", adminEmail: "" },
+    apkUrl: "",
+    sliders: [
+        { id: "sl1", image: "https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?q=80&w=1200&auto=format&fit=crop", title: "New Drop \u2014 Oversized Fit" },
+    ],
+    popup: { enabled: false, image: "", link: "" },
+    categories: [
+        { id: "c1", name: "All Products", image: "https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?q=80&w=600&auto=format&fit=crop" },
+        { id: "c2", name: "Oversized & Drop Shoulder", image: "https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?q=80&w=600&auto=format&fit=crop" },
+        { id: "c3", name: "Shirts", image: "https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?q=80&w=600&auto=format&fit=crop" },
+        { id: "c4", name: "Watches", image: "https://images.unsplash.com/photo-1524805444758-089113d48a6d?q=80&w=600&auto=format&fit=crop" },
+        { id: "c5", name: "Sneakers", image: "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?q=80&w=600&auto=format&fit=crop" },
+    ],
+    products: [
+        { id: "p1", name: "Midnight Ink Oversized Tee", price: 590, oldPrice: 750, category: "Oversized & Drop Shoulder", images: ["https://images.unsplash.com/photo-1503341504253-dff4815485f1?q=80&w=800&auto=format&fit=crop","https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?q=80&w=800&auto=format&fit=crop"], badge: "Hot", stock: 24, sizes: ["S","M","L","XL"], description: "Premium 100% cotton drop shoulder tee. Heavy boxy fit, short body, long life. Perfect for everyday streetwear looks." },
+        { id: "p2", name: "Desert Beige Boxy Fit", price: 620, oldPrice: null, category: "Oversized & Drop Shoulder", images: ["https://images.unsplash.com/photo-1576566588028-4147f3842f27?q=80&w=800&auto=format&fit=crop"], badge: "New", stock: 15, sizes: ["S","M","L","XL"], description: "Oversized boxy fit tee in desert beige. Soft-hand cotton fabric with reinforced stitching." },
+        { id: "p3", name: "Sandstone Casual Shirt", price: 850, oldPrice: null, category: "Shirts", images: ["https://images.unsplash.com/photo-1562157873-818bc0726f68?q=80&w=800&auto=format&fit=crop"], badge: "", stock: 10, sizes: ["M","L","XL","XXL"], description: "Casual everyday shirt with a relaxed fit. Breathable cotton blend fabric." },
+        { id: "p4", name: "Olevs 9931 Couple Watch", price: 1100, oldPrice: 1400, category: "Watches", images: ["https://images.unsplash.com/photo-1524805444758-089113d48a6d?q=80&w=800&auto=format&fit=crop"], badge: "Hot", stock: 8, sizes: [], description: "Elegant couple watch set with stainless steel band and water-resistant case." },
+        { id: "p5", name: "Street Runner Sneakers", price: 1450, oldPrice: null, category: "Sneakers", images: ["https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?q=80&w=800&auto=format&fit=crop"], badge: "New", stock: 12, sizes: ["39","40","41","42","43","44"], description: "Lightweight everyday sneakers with cushioned sole and breathable mesh upper." },
+        { id: "p6", name: "Olive Field Drop Shoulder", price: 590, oldPrice: null, category: "Oversized & Drop Shoulder", images: ["https://images.unsplash.com/photo-1618453292459-53478dbc4f19?q=80&w=800&auto=format&fit=crop"], badge: "", stock: 20, sizes: ["S","M","L","XL"], description: "Olive field green drop shoulder tee, made from 100% breathable cotton." },
+    ],
+};
+/* ================= firebase helpers ================= */
+function normalizeCatalog(c) {
+    const src = c || {};
+    return {
+        ...defaultCatalog,
+        ...src,
+        products: Array.isArray(src.products) ? src.products : [],
+        categories: Array.isArray(src.categories) ? src.categories : [],
+        coupons: Array.isArray(src.coupons) ? src.coupons : [],
+        sliders: Array.isArray(src.sliders) ? src.sliders : [],
+        popup: { enabled: false, image: "", link: "", ...(src.popup || {}) },
+        paymentNumbers: { ...defaultCatalog.paymentNumbers, ...(src.paymentNumbers || {}) },
+        contact: { ...defaultCatalog.contact, ...(src.contact || {}) },
+        pages: { ...defaultCatalog.pages, ...(src.pages || {}) },
+        emailjs: { ...defaultCatalog.emailjs, ...(src.emailjs || {}) },
+        apkUrl: src.apkUrl || "",
+    };
+}
+function watchCatalog(cb, onErr) {
+    const ref = db.ref("catalog");
+    ref.on("value", (snap) => {
+        if (snap.exists())
+            cb(normalizeCatalog(snap.val()));
+        else {
+            ref.set(defaultCatalog);
+            cb(defaultCatalog);
+        }
+    }, (err) => { console.error(err); onErr && onErr(err); });
+    return () => ref.off();
+}
+function saveCatalog(catalog) { return db.ref("catalog").set(catalog); }
+function watchOrders(cb, onErr) {
+    const ref = db.ref("orders").orderByChild("createdAt");
+    ref.on("value", (snap) => {
+        const val = snap.val() || {};
+        const list = Object.keys(val).map((id) => ({ ...val[id], id })).sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+        cb(list);
+    }, (err) => { console.error(err); onErr && onErr(err); });
+    return () => ref.off();
+}
+function pushOrder(order) { const ref = db.ref("orders").push(); return ref.set(order).then(() => ref); }
+function updateOrderStatus(id, status) { return db.ref("orders/" + id).update({ status }); }
+function updateOrder(id, patch) { return db.ref("orders/" + id).update(patch); }
+
+function watchAuth(cb) {
+    if (!auth) { cb(null); return () => {}; }
+    return auth.onAuthStateChanged((user) => cb(user));
+}
+function signInWithGoogle() {
+    if (!auth) return Promise.reject(new Error("Login system load hoyni. Page reload kore abar try koro."));
+    const provider = new firebase.auth.GoogleAuthProvider();
+    return auth.signInWithPopup(provider).then((cred) => {
+        upsertUserProfile(cred.user, { provider: "google", name: cred.user.displayName, email: cred.user.email });
+        return cred;
+    });
+}
+function signOutUser() {
+    if (!auth) return Promise.resolve();
+    return auth.signOut();
+}
+function signUpWithPassword(email, phone, password, name) {
+    if (!auth) return Promise.reject(new Error("Login system load hoyni. Page reload kore abar try koro."));
+    return auth.createUserWithEmailAndPassword(email.trim().toLowerCase(), password).then((cred) => {
+        return cred.user.updateProfile({ displayName: name }).then(() => {
+            upsertUserProfile(cred.user, { provider: "password", name: name, email: email.trim(), phone: phone.trim() });
+            return cred;
+        });
+    });
+}
+function signInWithPassword(email, password) {
+    if (!auth) return Promise.reject(new Error("লগইন সিস্টেম লোড হয়নি! রিলোড করে আবার চেষ্টা করুন।"));
+    return auth.signInWithEmailAndPassword(email.trim().toLowerCase(), password).then((cred) => {
+        upsertUserProfile(cred.user, {});
+        return cred;
+    });
+}
+function adminSignIn(email, password) {
+    if (!auth) return Promise.reject(new Error("লগইন সিস্টেম লোড হয়নি! রিলোড করে আবার চেষ্টা করুন।"));
+    return auth.signInWithEmailAndPassword(email.trim().toLowerCase(), password);
+}
+/* User profile directory in Realtime Database — name/email/phone/join-date only.
+   Firebase Auth never exposes plaintext passwords to anyone, including admins —
+   they're one-way hashed, so there is nothing to read or show here even in principle. */
+function upsertUserProfile(user, extra) {
+    if (!user) return Promise.resolve();
+    const ref = db.ref("users/" + user.uid);
+    const now = new Date().toISOString();
+    return ref.once("value").then((snap) => {
+        if (snap.exists()) {
+            const patch = { lastLoginAt: now };
+            if (extra && extra.name) patch.name = extra.name;
+            if (extra && extra.email) patch.email = extra.email;
+            if (extra && extra.phone) patch.phone = extra.phone;
+            return ref.update(patch);
+        }
+        return ref.set({
+            name: (extra && extra.name) || "",
+            email: (extra && extra.email) || "",
+            phone: (extra && extra.phone) || "",
+            provider: (extra && extra.provider) || "password",
+            createdAt: now,
+            lastLoginAt: now,
+        });
+    });
+}
+function watchUsers(cb, onErr) {
+    const ref = db.ref("users");
+    ref.on("value", (snap) => {
+        const val = snap.val() || {};
+        const list = Object.keys(val).map((uid) => ({ ...val[uid], uid })).sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+        cb(list);
+    }, (err) => { console.error(err); onErr && onErr(err); });
+    return () => ref.off();
+}
+function pingAppOpen() {
+    try { db.ref("stats/appOpens").transaction((cur) => (cur || 0) + 1); } catch (e) {}
+}
+function sendOrderEmails(order, catalog) {
+    const cfg = catalog.emailjs || {};
+    if (!cfg.serviceId || !cfg.templateId || !cfg.publicKey || typeof emailjs === "undefined") return;
+    const itemsText = (order.items || []).map((i) => i.name + (i.size ? " (" + i.size + ")" : "") + " x" + i.qty).join(", ");
+    const baseParams = {
+        shop_name: catalog.shopName,
+        order_id: (order.__id || "").slice(-6).toUpperCase(),
+        customer_name: order.customer.name,
+        customer_phone: order.customer.phone,
+        customer_address: [order.customer.thana, order.customer.district].filter(Boolean).join(", ") + " \u2014 " + order.customer.address,
+        items: itemsText,
+        total: "\u09F3 " + order.grandTotal,
+        payment_method: order.paymentMethod,
+    };
+    const recipients = [];
+    if (cfg.adminEmail) recipients.push(cfg.adminEmail);
+    if (order.customer.email) recipients.push(order.customer.email);
+    recipients.forEach((to) => {
+        emailjs.send(cfg.serviceId, cfg.templateId, { ...baseParams, to_email: to }, cfg.publicKey).catch((err) => console.error("EmailJS error:", err));
+    });
+}
+const money = (n) => `৳ ${Number(n).toLocaleString("en-BD")}`;
+const pctOff = (price, oldPrice) => (oldPrice && oldPrice > price) ? Math.round((1 - price / oldPrice) * 100) : null;
+const uid = () => Math.random().toString(36).slice(2, 9);
+const primaryImage = (p) => (p && p.images && p.images.length ? p.images[0] : (p && p.image) || "");
+
+/* Bangladesh District -> Thana/Upazila list (best-effort; edit/expand as needed) */
+const BD_LOCATIONS = {
+  "Dhaka": ["Dhanmondi","Gulshan","Banani","Mirpur","Mohammadpur","Uttara","Tejgaon","Ramna","Motijheel","Khilgaon","Khilkhet","Badda","Rampura","Shyampur","Kotwali","Lalbagh","Hazaribagh","Adabor","Kafrul","Kalabagan","Cantonment","Pallabi","Shah Ali","Turag","Demra","Sabujbagh","Wari","Jatrabari","Paltan","Shahbagh","New Market","Bangshal","Chawkbazar","Dhamrai","Dohar","Keraniganj","Nawabganj","Savar"],
+  "Faridpur": ["Faridpur Sadar","Alfadanga","Bhanga","Boalmari","Charbhadrasan","Madhukhali","Nagarkanda","Sadarpur","Saltha"],
+  "Gazipur": ["Gazipur Sadar","Kaliakair","Kaliganj","Kapasia","Sreepur","Tongi"],
+  "Gopalganj": ["Gopalganj Sadar","Kashiani","Kotalipara","Muksudpur","Tungipara"],
+  "Kishoreganj": ["Kishoreganj Sadar","Austagram","Bajitpur","Bhairab","Hossainpur","Itna","Karimganj","Katiadi","Kuliarchar","Mithamain","Nikli","Pakundia","Tarail"],
+  "Madaripur": ["Madaripur Sadar","Kalkini","Rajoir","Shibchar"],
+  "Manikganj": ["Manikganj Sadar","Daulatpur","Ghior","Harirampur","Saturia","Shibalaya","Singair"],
+  "Munshiganj": ["Munshiganj Sadar","Gazaria","Lohajang","Sirajdikhan","Sreenagar","Tongibari"],
+  "Narayanganj": ["Narayanganj Sadar","Araihazar","Bandar","Rupganj","Sonargaon"],
+  "Narsingdi": ["Narsingdi Sadar","Belabo","Monohardi","Palash","Raipura","Shibpur"],
+  "Rajbari": ["Rajbari Sadar","Baliakandi","Goalanda","Pangsha","Kalukhali"],
+  "Shariatpur": ["Shariatpur Sadar","Bhedarganj","Damudya","Gosairhat","Naria","Zajira"],
+  "Tangail": ["Tangail Sadar","Basail","Bhuapur","Delduar","Dhanbari","Ghatail","Gopalpur","Kalihati","Madhupur","Mirzapur","Nagarpur","Sakhipur"],
+
+  "Chattogram": ["Kotwali","Panchlaish","Double Mooring","Pahartali","Bayezid","Chandgaon","Bakalia","Halishahar","Patenga","EPZ","Karnaphuli","Anwara","Banshkhali","Boalkhali","Chandanaish","Fatikchhari","Hathazari","Lohagara","Mirsharai","Patiya","Rangunia","Raozan","Sandwip","Satkania","Sitakunda"],
+  "Cumilla": ["Cumilla Sadar","Barura","Brahmanpara","Burichang","Chandina","Chauddagram","Daudkandi","Debidwar","Homna","Laksam","Meghna","Monohorgonj","Muradnagar","Nangalkot","Titas","Cumilla Sadar Dakshin"],
+  "Brahmanbaria": ["Brahmanbaria Sadar","Akhaura","Ashuganj","Bancharampur","Bijoynagar","Kasba","Nabinagar","Nasirnagar","Sarail"],
+  "Chandpur": ["Chandpur Sadar","Faridganj","Haimchar","Haziganj","Kachua","Matlab Dakshin","Matlab Uttar","Shahrasti"],
+  "Cox's Bazar": ["Cox's Bazar Sadar","Chakaria","Kutubdia","Maheshkhali","Pekua","Ramu","Teknaf","Ukhia"],
+  "Feni": ["Feni Sadar","Chhagalnaiya","Daganbhuiyan","Parshuram","Fulgazi","Sonagazi"],
+  "Khagrachari": ["Khagrachari Sadar","Dighinala","Lakshmichhari","Mahalchhari","Manikchhari","Matiranga","Panchhari","Ramgarh"],
+  "Lakshmipur": ["Lakshmipur Sadar","Kamalnagar","Raipur","Ramganj","Ramgati"],
+  "Noakhali": ["Noakhali Sadar","Begumganj","Chatkhil","Companiganj","Hatiya","Kabirhat","Senbagh","Sonaimuri","Subarnachar"],
+  "Rangamati": ["Rangamati Sadar","Baghaichhari","Barkal","Belaichhari","Juraichhari","Kaptai","Kawkhali","Langadu","Naniarchar","Rajasthali"],
+  "Bandarban": ["Bandarban Sadar","Alikadam","Lama","Naikhongchhari","Rowangchhari","Ruma","Thanchi"],
+
+  "Rajshahi": ["Boalia","Motihar","Rajpara","Shah Makhdum","Bagha","Bagmara","Charghat","Durgapur","Godagari","Mohanpur","Paba","Puthia","Tanore"],
+  "Bogura": ["Bogura Sadar","Adamdighi","Dhunat","Dhupchanchia","Gabtali","Kahaloo","Nandigram","Sariakandi","Shajahanpur","Sherpur","Shibganj","Sonatola"],
+  "Joypurhat": ["Joypurhat Sadar","Akkelpur","Kalai","Khetlal","Panchbibi"],
+  "Naogaon": ["Naogaon Sadar","Atrai","Badalgachhi","Dhamoirhat","Manda","Mahadevpur","Niamatpur","Patnitala","Porsha","Raninagar","Sapahar"],
+  "Natore": ["Natore Sadar","Bagatipara","Baraigram","Gurudaspur","Lalpur","Singra"],
+  "Chapainawabganj": ["Chapainawabganj Sadar","Bholahat","Gomastapur","Nachole","Shibganj"],
+  "Pabna": ["Pabna Sadar","Atgharia","Bera","Bhangura","Chatmohar","Faridpur","Ishwardi","Santhia","Sujanagar"],
+  "Sirajganj": ["Sirajganj Sadar","Belkuchi","Chauhali","Kamarkhanda","Kazipur","Raiganj","Shahjadpur","Tarash","Ullapara"],
+
+  "Khulna": ["Khalishpur","Khan Jahan Ali","Sonadanga","Daulatpur","Kotwali","Batiaghata","Dacope","Dumuria","Dighalia","Koyra","Paikgachha","Phultala","Rupsa","Terokhada"],
+  "Bagerhat": ["Bagerhat Sadar","Chitalmari","Fakirhat","Kachua","Mollahat","Mongla","Morrelganj","Rampal","Sarankhola"],
+  "Chuadanga": ["Chuadanga Sadar","Alamdanga","Damurhuda","Jibannagar"],
+  "Jashore": ["Jashore Sadar","Abhaynagar","Bagherpara","Chaugachha","Jhikargachha","Keshabpur","Manirampur","Sharsha"],
+  "Jhenaidah": ["Jhenaidah Sadar","Harinakunda","Kaliganj","Kotchandpur","Maheshpur","Shailkupa"],
+  "Kushtia": ["Kushtia Sadar","Bheramara","Daulatpur","Khoksa","Kumarkhali","Mirpur"],
+  "Magura": ["Magura Sadar","Mohammadpur","Shalikha","Sreepur"],
+  "Meherpur": ["Meherpur Sadar","Gangni","Mujibnagar"],
+  "Narail": ["Narail Sadar","Kalia","Lohagara"],
+  "Satkhira": ["Satkhira Sadar","Assasuni","Debhata","Kalaroa","Kaliganj","Shyamnagar","Tala"],
+
+  "Barishal": ["Barishal Sadar","Agailjhara","Babuganj","Bakerganj","Banaripara","Gaurnadi","Hizla","Mehendiganj","Muladi","Wazirpur"],
+  "Barguna": ["Barguna Sadar","Amtali","Bamna","Betagi","Patharghata","Taltali"],
+  "Bhola": ["Bhola Sadar","Borhanuddin","Char Fasson","Daulatkhan","Lalmohan","Manpura","Tazumuddin"],
+  "Jhalokati": ["Jhalokati Sadar","Kathalia","Nalchity","Rajapur"],
+  "Patuakhali": ["Patuakhali Sadar","Bauphal","Dashmina","Dumki","Galachipa","Kalapara","Mirzaganj","Rangabali"],
+  "Pirojpur": ["Pirojpur Sadar","Bhandaria","Kawkhali","Mathbaria","Nazirpur","Nesarabad","Zianagar"],
+
+  "Sylhet": ["Sylhet Sadar","Beanibazar","Bishwanath","Companiganj","Fenchuganj","Golapganj","Gowainghat","Jaintiapur","Kanaighat","Osmani Nagar","Zakiganj"],
+  "Habiganj": ["Habiganj Sadar","Ajmiriganj","Bahubal","Baniyachong","Chunarughat","Lakhai","Madhabpur","Nabiganj","Shayestaganj"],
+  "Moulvibazar": ["Moulvibazar Sadar","Barlekha","Juri","Kamalganj","Kulaura","Rajnagar","Sreemangal"],
+  "Sunamganj": ["Sunamganj Sadar","Bishwamvarpur","Chhatak","Derai","Dharampasha","Dowarabazar","Jagannathpur","Jamalganj","Sulla","Shantiganj","Tahirpur"],
+
+  "Rangpur": ["Rangpur Sadar","Badarganj","Gangachara","Kaunia","Mithapukur","Pirgachha","Pirganj","Taraganj"],
+  "Dinajpur": ["Dinajpur Sadar","Birampur","Birganj","Biral","Bochaganj","Chirirbandar","Fulbari","Ghoraghat","Hakimpur","Kaharole","Khansama","Nawabganj","Parbatipur"],
+  "Gaibandha": ["Gaibandha Sadar","Fulchhari","Gobindaganj","Palashbari","Sadullapur","Saghata","Sundarganj"],
+  "Kurigram": ["Kurigram Sadar","Bhurungamari","Char Rajibpur","Chilmari","Phulbari","Nageshwari","Rajarhat","Raomari","Ulipur"],
+  "Lalmonirhat": ["Lalmonirhat Sadar","Aditmari","Hatibandha","Kaliganj","Patgram"],
+  "Nilphamari": ["Nilphamari Sadar","Dimla","Domar","Jaldhaka","Kishoreganj","Syedpur"],
+  "Panchagarh": ["Panchagarh Sadar","Atwari","Boda","Debiganj","Tetulia"],
+  "Thakurgaon": ["Thakurgaon Sadar","Baliadangi","Haripur","Pirganj","Ranisankail"],
+
+  "Mymensingh": ["Mymensingh Sadar","Bhaluka","Dhobaura","Fulbaria","Gafargaon","Gauripur","Haluaghat","Ishwarganj","Muktagachha","Nandail","Phulpur","Trishal"],
+  "Jamalpur": ["Jamalpur Sadar","Bakshiganj","Dewanganj","Islampur","Madarganj","Melandaha","Sarishabari"],
+  "Netrokona": ["Netrokona Sadar","Atpara","Barhatta","Durgapur","Kalmakanda","Kendua","Khaliajuri","Madan","Mohanganj","Purbadhala"],
+  "Sherpur": ["Sherpur Sadar","Jhenaigati","Nakla","Nalitabari","Sreebardi"],
+};
+const BD_DISTRICTS = Object.keys(BD_LOCATIONS);
+
+const C = { ink: "#141412", paper: "#F4F1E9", paper2: "#EAE5D8", vibe: "#FF7500", vibeDim: "#c95e00", khaki: "#9C9270", white: "#fff" };
+const fAnton = { fontFamily: "'Anton', sans-serif" };
+const fMono = { fontFamily: "'Space Mono', monospace" };
+const fBody = { fontFamily: "'DM Sans', sans-serif" };
+/* tiny inline icon glyphs (no icon library needed) */
+const Ic = {
+    search: "⌕", cart: "🛍", plus: "+", minus: "–", trash: "🗑",
+    back: "‹", lock: "🔒", check: "✓", copy: "⧉", down: "▾", logout: "⏻", edit: "✎",
+};
+/* ================= APP ================= */
+function App() {
+    const [loading, setLoading] = useState(true);
+    const [catalog, setCatalog] = useState(defaultCatalog);
+    const [orders, setOrders] = useState([]);
+    const [view, setView] = useState("store");
+    const [activeCat, setActiveCat] = useState("All Products");
+    const [query, setQuery] = useState("");
+    const [cart, setCart] = useState([]);
+    const [lastOrder, setLastOrder] = useState(null);
+    const [toast, setToast] = useState("");
+    const [fbError, setFbError] = useState("");
+    const [pageKey, setPageKey] = useState(null);
+    const [selectedProductId, setSelectedProductId] = useState(null);
+    const [isOffline, setIsOffline] = useState(false);
+    const [popupClosed, setPopupClosed] = useState(false);
+    const [currentUser, setCurrentUser] = useState(undefined);
+    useEffect(() => {
+        const goOffline = () => setIsOffline(true);
+        const goOnline = () => setIsOffline(false);
+        window.addEventListener("offline", goOffline);
+        window.addEventListener("online", goOnline);
+        return () => { window.removeEventListener("offline", goOffline); window.removeEventListener("online", goOnline); };
+    }, []);
+    useEffect(() => {
+        const unsubC = watchCatalog((c) => { setCatalog(c); setLoading(false); }, (err) => { setLoading(false); setFbError(err.message || String(err)); });
+        const unsubO = watchOrders(setOrders, (err) => setFbError(err.message || String(err)));
+        const unsubA = watchAuth((u) => setCurrentUser(u || null));
+        pingAppOpen();
+        return () => { unsubC(); unsubO(); unsubA(); };
+    }, []);
+    useEffect(() => {
+        if (loading || !catalog.products.length) return;
+        const params = new URLSearchParams(window.location.search);
+        const pid = params.get("product");
+        if (pid && catalog.products.find((p) => p.id === pid)) {
+            setSelectedProductId(pid);
+            setView("product");
+        }
+    }, [loading]);
+    const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(""), 2200); };
+    const adjustStock = (items, delta) => {
+        const products = catalog.products.map((p) => {
+            const item = items.find((i) => i.productId === p.id);
+            if (!item) return p;
+            return { ...p, stock: Math.max(0, (p.stock || 0) + delta * item.qty) };
+        });
+        return saveCatalog({ ...catalog, products });
+    };
+    const placeOrder = async (order) => {
+        const ref = await pushOrder(order);
+        sendOrderEmails({ ...order, __id: ref.key }, catalog);
+        await adjustStock(order.items, -1);
+        setLastOrder(order);
+        setCart([]);
+        setView("confirm");
+    };
+    const handleOrderStatus = async (id, status) => {
+        await updateOrderStatus(id, status);
+        if (status === "rejected") {
+            const ord = orders.find((o) => o.id === id);
+            if (ord) await adjustStock(ord.items, 1);
+        }
+    };
+    const addToCart = (p, size, qty, image) => {
+        const img = image || primaryImage(p);
+        const cartId = p.id + (size ? "__" + size : "") + (image ? "__" + img : "");
+        const addQty = qty || 1;
+        setCart((prev) => {
+            const found = prev.find((i) => i.id === cartId);
+            if (found)
+                return prev.map((i) => (i.id === cartId ? { ...i, qty: i.qty + addQty } : i));
+            return [...prev, { id: cartId, productId: p.id, name: p.name, price: p.price, oldPrice: p.oldPrice || null, image: img, size: size || null, qty: addQty }];
+        });
+        showToast(p.name + (size ? " (" + size + ")" : "") + " cart-e added");
+    };
+    const viewProduct = (p) => { setSelectedProductId(p.id); setView("product"); };
+    const changeQty = (id, d) => setCart((prev) => prev.map((i) => (i.id === id ? { ...i, qty: Math.max(1, i.qty + d) } : i)));
+    const removeFromCart = (id) => setCart((prev) => prev.filter((i) => i.id !== id));
+    const cartTotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
+    const cartCount = cart.reduce((s, i) => s + i.qty, 0);
+    const filteredProducts = catalog.products.filter((p) => {
+        const catOk = activeCat === "All Products" || p.category === activeCat;
+        const qOk = p.name.toLowerCase().includes(query.toLowerCase());
+        return catOk && qOk;
+    });
+    const adminRole = currentUser && currentUser.email
+        ? (currentUser.email.toLowerCase() === ADMIN_EMAIL.toLowerCase() ? "full"
+            : currentUser.email.toLowerCase() === STAFF_EMAIL.toLowerCase() ? "staff" : null)
+        : null;
+    useEffect(() => {
+        if (view === "admin-login" && adminRole) setView("admin");
+    }, [view, adminRole]);
+    if (isOffline) {
+        return React.createElement("div", { style: { minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(135deg,#ff7a00,#ff4d00)", fontFamily: "'Segoe UI',sans-serif", padding: 20 } },
+            React.createElement("div", { style: { width: "90%", maxWidth: 380, padding: "35px 25px", textAlign: "center", background: "rgba(255,255,255,0.15)", backdropFilter: "blur(15px)", borderRadius: 30, border: "1px solid rgba(255,255,255,0.3)", color: "#fff", boxShadow: "0 20px 50px rgba(0,0,0,0.2)" } },
+                React.createElement("div", { style: { width: 75, height: 75, background: "#fff", color: "#ff6500", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto", borderRadius: 22, fontSize: 40, fontWeight: 800, boxShadow: "0 10px 25px rgba(0,0,0,0.15)" } }, (catalog.shopName || "V").charAt(0)),
+                React.createElement("div", { style: { fontSize: 26, fontWeight: 700, marginTop: 15 } }, catalog.shopName || "Vibe Zone"),
+                React.createElement("div", { style: { marginTop: 30 } },
+                    React.createElement("div", { className: "vz-wifi", style: { fontSize: 60 } }, "\uD83D\uDCF6"),
+                    React.createElement("h2", { style: { fontSize: 22, marginTop: 15 } }, "You're Offline"),
+                    React.createElement("p", { style: { fontSize: 14, lineHeight: 1.6, opacity: 0.9, marginTop: 10 } }, "Internet connection \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u099A\u09CD\u099B\u09C7 \u09A8\u09BE\u0964", React.createElement("br"), "\u0986\u09AA\u09A8\u09BE\u09B0 \u09A8\u09C7\u099F\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u0995 \u099A\u09C7\u0995 \u0995\u09B0\u09C7 \u0986\u09AC\u09BE\u09B0 \u099A\u09C7\u09B7\u09CD\u099F\u09BE \u0995\u09B0\u09C1\u09A8\u0964"),
+                    React.createElement("button", {
+                        onClick: () => { if (navigator.onLine) { setIsOffline(false); } else { alert("Please check your internet connection"); } },
+                        style: { marginTop: 25, width: "100%", padding: 14, border: "none", borderRadius: 50, background: "#fff", color: "#ff6500", fontSize: 16, fontWeight: 700, cursor: "pointer" }
+                    }, "\u21BB Try Again")),
+                React.createElement("div", { style: { marginTop: 25, fontSize: 12, opacity: 0.7 } }, "Premium Shopping Experience")));
+    }
+    if (loading) {
+        return React.createElement("div", { style: { minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: C.vibe, fontFamily: "Arial, sans-serif" } },
+            React.createElement("div", { style: { textAlign: "center", color: "#fff" } },
+                React.createElement("div", { className: "vz-load-logo", style: { width: 90, height: 90, background: "#fff", color: C.vibe, borderRadius: 25, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 45, fontWeight: "bold", margin: "0 auto" } }, (catalog.shopName || "V").charAt(0)),
+                React.createElement("div", { style: { ...fAnton, marginTop: 20, fontSize: 28, letterSpacing: "1px", textTransform: "uppercase" } }, catalog.shopName || "Vibe Zone"),
+                React.createElement("div", { style: { marginTop: 8, fontSize: 14, opacity: 0.9 } }, catalog.tagline || "Premium Fashion \u2022 Smart Shopping"),
+                React.createElement("div", { style: { width: 180, height: 5, background: "rgba(255,255,255,0.35)", borderRadius: 20, margin: "30px auto 0", overflow: "hidden" } },
+                    React.createElement("div", { className: "vz-load-bar", style: { height: "100%", width: "0%", background: "#fff", borderRadius: 20 } }))));
+    }
+    return (React.createElement("div", { style: { ...fBody, background: C.paper, minHeight: "100vh", color: C.ink } },
+        fbError && (React.createElement("div", { style: { background: "#b02a2a", color: "#fff", padding: "12px 20px", fontSize: 13, ...fMono, textAlign: "center" } },
+            "\u26A0 Firebase error: ",
+            fbError,
+            " \u2014 check Realtime Database Rules in Firebase Console (Build \u2192 Realtime Database \u2192 Rules).")),
+        toast && React.createElement("div", { style: { position: "fixed", top: 16, left: "50%", transform: "translateX(-50%)", zIndex: 200, background: C.ink, color: C.paper, padding: "10px 18px", borderRadius: 999, fontSize: 13, ...fMono } }, toast),
+        view !== "admin" && view !== "admin-login" && !popupClosed && catalog.popup && catalog.popup.enabled && catalog.popup.image &&
+            React.createElement(AppPopup, { image: catalog.popup.image, link: catalog.popup.link, onClose: () => setPopupClosed(true) }),
+        view !== "admin" && view !== "admin-login" &&
+            React.createElement(TopHeader, { shopName: catalog.shopName, logo: catalog.logo, cartCount: cartCount, query: query, setQuery: setQuery, onCart: () => setView("cart"), onAdmin: () => setView(adminRole ? "admin" : "admin-login"), onHome: () => { setView("store"); setPageKey(null); }, onTrack: () => setView("track"), onOpenPage: (k) => { setPageKey(k); setView("page"); }, onAccount: () => setView("account"), currentUser: currentUser }),
+        view === "store" && React.createElement(Store, { catalog: catalog, activeCat: activeCat, setActiveCat: setActiveCat, products: filteredProducts, onAdd: addToCart, onView: viewProduct, onOpenCategories: () => setView("categories") }),
+        view === "categories" && React.createElement(CategoriesPage, { catalog: catalog, onOpenCategory: (name) => { setActiveCat(name); setView("store"); }, onBack: () => setView("store") }),
+        view === "product" && selectedProductId && React.createElement(ProductDetail, { product: catalog.products.find((p) => p.id === selectedProductId), allProducts: catalog.products, onBack: () => setView("store"), onAdd: addToCart, onGoCart: () => setView("cart"), onGoCheckout: () => setView("checkout"), onOpenProduct: viewProduct }),
+        view === "track" && React.createElement(TrackOrder, { orders: orders, onBack: () => setView("store") }),
+        view === "account" && React.createElement(AccountView, { currentUser: currentUser, orders: orders, onBack: () => setView("store") }),
+        view === "page" && pageKey && React.createElement(PageView, { title: PAGE_TITLES[pageKey], content: (catalog.pages || {})[pageKey], onBack: () => setView("store") }),
+        view === "cart" && React.createElement(CartView, { cart: cart, changeQty: changeQty, removeFromCart: removeFromCart, total: cartTotal, onBack: () => setView("store"), onCheckout: () => setView(cart.length ? "checkout" : "cart") }),
+        view === "checkout" && React.createElement(Checkout, { cart: cart, total: cartTotal, catalog: catalog, currentUser: currentUser, onBack: () => setView("cart"), onPlace: placeOrder }),
+        view === "confirm" && lastOrder && React.createElement(Confirm, { order: lastOrder, onDone: () => setView("store") }),
+        view === "admin-login" && React.createElement(AdminLogin, {
+            onBack: () => setView("store"),
+            deniedEmail: currentUser && currentUser.email && adminRole === null ? currentUser.email : null
+        }),
+        view === "admin" && adminRole === "full" && React.createElement(AdminDashboard, { catalog: catalog, orders: orders, setCatalog: saveCatalog, setOrders: handleOrderStatus, onExit: () => setView("store"), onLogout: () => { signOutUser(); setView("store"); }, showToast: showToast }),
+        view === "admin" && adminRole === "staff" && React.createElement(StaffAddProduct, { catalog: catalog, setCatalog: saveCatalog, onLogout: () => { signOutUser(); setView("store"); }, showToast: showToast }),
+        view !== "admin" && view !== "admin-login" && React.createElement(SiteFooter, { catalog: catalog, onOpenPage: (k) => { setPageKey(k); setView("page"); } }),
+        view !== "admin" && view !== "admin-login" && React.createElement(WhatsAppButton, { phone: catalog.contact && catalog.contact.phone, shopName: catalog.shopName })));
+}
+/* ================= HEADER ================= */
+function AppPopup({ image, link, onClose }) {
+    const content = React.createElement("img", { src: image, alt: "", style: { width: "100%", display: "block", borderRadius: 12 } });
+    return React.createElement("div", {
+        onClick: onClose,
+        style: { position: "fixed", inset: 0, zIndex: 150, background: "rgba(20,20,18,0.75)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }
+    },
+        React.createElement("div", { onClick: (e) => e.stopPropagation(), style: { position: "relative", maxWidth: 420, width: "100%" } },
+            React.createElement("button", {
+                onClick: onClose,
+                style: { position: "absolute", top: -14, right: -14, width: 32, height: 32, borderRadius: "50%", background: C.ink, color: C.paper, border: "2px solid " + C.paper, fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2 }
+            }, "\u2715"),
+            link
+                ? React.createElement("a", { href: link, target: "_blank", rel: "noopener noreferrer" }, content)
+                : content));
+}
+function TopHeader({ shopName, logo, cartCount, query, setQuery, onCart, onAdmin, onHome, onTrack, onOpenPage, onAccount, currentUser }) {
+    const [taps, setTaps] = useState(0);
+    const tapTimer = React.useRef(null);
+    const [menuOpen, setMenuOpen] = useState(false);
+    const handleLogoClick = () => {
+        onHome();
+        setTaps((n) => {
+            const next = n + 1;
+            if (tapTimer.current) clearTimeout(tapTimer.current);
+            tapTimer.current = setTimeout(() => setTaps(0), 1200);
+            if (next >= 7) { onAdmin(); return 0; }
+            return next;
+        });
+    };
+    const menuItems = [
+        { label: currentUser ? "My Account" : "Sign In / My Orders", action: onAccount },
+        { label: "Track Order (Guest)", action: onTrack },
+        { label: "About Us", action: () => onOpenPage("about") },
+        { label: "Privacy Policy", action: () => onOpenPage("privacy") },
+        { label: "Terms & Conditions", action: () => onOpenPage("terms") },
+        { label: "Return & Cancellation", action: () => onOpenPage("returns") },
+    ];
+    const menuButton = React.createElement("button", { onClick: () => setMenuOpen((v) => !v), title: "Menu", style: { ...iconBtnStyle, fontSize: 18, letterSpacing: "-1px" } }, "\u22EE");
+    const menuPanel = menuOpen ? React.createElement(React.Fragment, null,
+        React.createElement("div", { onClick: () => setMenuOpen(false), style: { position: "fixed", inset: 0, zIndex: 59 } }),
+        React.createElement("div", { style: { position: "absolute", top: 44, right: 0, zIndex: 60, background: C.white, border: "1.5px solid " + C.ink, minWidth: 200, boxShadow: "4px 4px 0 " + C.ink } },
+            menuItems.map((m, i) => React.createElement("div", { key: i, onClick: () => { setMenuOpen(false); m.action(); }, style: { padding: "12px 16px", fontSize: 13, cursor: "pointer", borderBottom: i < menuItems.length - 1 ? "1px solid " + C.ink + "18" : "none" } }, m.label))
+        )
+    ) : null;
+    const cartButton = React.createElement("button", { onClick: onCart, title: "Cart", style: { ...iconBtnStyle, position: "relative" } },
+        Ic.cart,
+        cartCount > 0 ? React.createElement("span", { style: { position: "absolute", top: -6, right: -6, background: C.vibe, color: C.white, borderRadius: 999, fontSize: 10, width: 18, height: 18, display: "flex", alignItems: "center", justifyContent: "center", ...fMono } }, cartCount) : null
+    );
+    const accountButton = React.createElement("button", { onClick: onAccount, title: currentUser ? "My Account" : "Login / Sign Up", style: { ...iconBtnStyle, overflow: "hidden", padding: 0 } },
+        currentUser && currentUser.photoURL
+            ? React.createElement("img", { src: currentUser.photoURL, alt: "", style: { width: "100%", height: "100%", objectFit: "cover" } })
+            : currentUser
+                ? React.createElement("span", { style: { ...fAnton, fontSize: 14 } }, (currentUser.displayName || currentUser.email || "U").charAt(0).toUpperCase())
+                : React.createElement("span", { style: { fontSize: 16 } }, "\uD83D\uDC64"));
+    return (React.createElement("header", { style: { position: "sticky", top: 0, zIndex: 50, background: C.paper, borderBottom: "2px solid " + C.ink } },
+        React.createElement("div", { style: { maxWidth: 1200, margin: "0 auto", padding: "14px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" } },
+            React.createElement("div", { onClick: handleLogoClick, style: { ...fAnton, fontSize: 24, cursor: "pointer", display: "flex", alignItems: "center", userSelect: "none" } },
+                logo
+                    ? React.createElement("img", { src: logo, alt: shopName, style: { height: 30, objectFit: "contain" } })
+                    : React.createElement(React.Fragment, null, shopName, React.createElement("span", { style: { color: C.vibe } }, "."))),
+            React.createElement("div", { style: { flex: 1, minWidth: 180, maxWidth: 420, position: "relative" } },
+                React.createElement("span", { style: { position: "absolute", left: 12, top: 9, fontSize: 15 } }, Ic.search),
+                React.createElement("input", { value: query, onChange: (e) => setQuery(e.target.value), placeholder: "Search products...", style: { width: "100%", padding: "9px 12px 9px 34px", border: "1.5px solid " + C.ink, background: C.white, fontSize: 13, outline: "none" } })),
+            React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, position: "relative" } },
+                accountButton,
+                cartButton,
+                menuButton,
+                menuPanel))));
+}
+const iconBtnStyle = { width: 36, height: 36, borderRadius: "50%", border: "1.5px solid " + C.ink, background: "transparent", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 15 };
+/* ================= STORE ================= */
+function Store({ catalog, activeCat, setActiveCat, products, onAdd, onView, onOpenCategories }) {
+    const homeCats = catalog.categories.filter((c) => c.showOnHome !== false);
+    return (React.createElement("div", { style: { maxWidth: 1200, margin: "0 auto", padding: "0 20px" } },
+        React.createElement("div", { style: { padding: "44px 0 8px" } },
+            React.createElement("div", { style: { ...fMono, fontSize: 11, color: C.vibeDim, letterSpacing: "0.14em" } }, " \u2192 EVERY DISTRICT, BD"),
+            React.createElement("h1", { style: { ...fAnton, fontSize: "clamp(32px,6vw,56px)", lineHeight: 1, textTransform: "uppercase", marginTop: 10 } }, catalog.tagline)),
+        catalog.sliders && catalog.sliders.length > 0 && React.createElement(HeroSlider, { slides: catalog.sliders }),
+        React.createElement("div", { style: { display: "flex", gap: 10, overflowX: "auto", padding: "22px 0", alignItems: "center" } },
+            homeCats.map((c) => (React.createElement("button", { key: c.id, onClick: () => setActiveCat(c.name), style: { ...fMono, fontSize: 12, letterSpacing: "0.06em", whiteSpace: "nowrap", padding: "10px 16px", border: "1.5px solid " + C.ink, cursor: "pointer",
+                background: activeCat === c.name ? C.ink : "transparent", color: activeCat === c.name ? C.paper : C.ink } }, c.name.toUpperCase()))),
+            React.createElement("button", { onClick: onOpenCategories, style: { ...fMono, fontSize: 12, letterSpacing: "0.06em", whiteSpace: "nowrap", padding: "10px 16px", border: "1.5px dashed " + C.vibeDim, color: C.vibeDim, background: "transparent", cursor: "pointer" } }, "All Categories \u2192")),
+        React.createElement("div", { className: "vz-grid" },
+            products.length === 0 && React.createElement("div", { style: { ...fMono, fontSize: 13, color: C.khaki, padding: "40px 0", gridColumn: "1 / -1" } }, "No products found in this category."),
+            products.map((p) => React.createElement(ProductCard, { key: p.id, p: p, onAdd: onAdd, onOpen: () => onView(p) })))));
+}
+function CategoriesPage({ catalog, onOpenCategory, onBack }) {
+    const countFor = (name) => catalog.products.filter((p) => p.category === name).length;
+    return React.createElement("div", { style: { maxWidth: 1100, margin: "0 auto", padding: "24px 20px 80px" } },
+        React.createElement("button", { onClick: onBack, style: backBtnStyle }, Ic.back, " Back to Store"),
+        React.createElement("h2", { style: { ...fAnton, fontSize: 28, textTransform: "uppercase", margin: "18px 0 24px" } }, "All Categories"),
+        catalog.categories.length === 0 && React.createElement("div", { style: { ...fMono, fontSize: 13, color: C.khaki } }, "Kono category nei."),
+        React.createElement("div", { className: "vz-grid" },
+            catalog.categories.map((c) => React.createElement("div", {
+                key: c.id, onClick: () => onOpenCategory(c.name), style: { cursor: "pointer", background: C.white, border: "1.5px solid " + C.ink }
+            },
+                React.createElement("div", { style: { aspectRatio: "1/1", overflow: "hidden", borderBottom: "1.5px solid " + C.ink, background: C.paper2 } },
+                    React.createElement("img", { src: c.image, alt: c.name, style: { width: "100%", height: "100%", objectFit: "cover" } })),
+                React.createElement("div", { style: { padding: "10px 12px" } },
+                    React.createElement("div", { style: { fontWeight: 700, fontSize: 13 } }, c.name),
+                    React.createElement("div", { style: { ...fMono, fontSize: 11, color: C.khaki, marginTop: 3 } }, countFor(c.name) + " products"))))));
+}
+function HeroSlider({ slides }) {
+    const [idx, setIdx] = useState(0);
+    useEffect(() => {
+        if (slides.length <= 1) return;
+        const t = setInterval(() => setIdx((i) => (i + 1) % slides.length), 4000);
+        return () => clearInterval(t);
+    }, [slides.length]);
+    if (!slides.length) return null;
+    const s = slides[idx];
+    return React.createElement("div", { style: { position: "relative", marginTop: 20, border: "1.5px solid " + C.ink, overflow: "hidden", aspectRatio: "16/7", background: C.paper2 } },
+        React.createElement("img", { src: s.image, alt: s.title || "", style: { width: "100%", height: "100%", objectFit: "cover" } }),
+        s.title && React.createElement("div", { style: { position: "absolute", left: 0, bottom: 0, right: 0, padding: "18px 20px", background: "linear-gradient(to top, rgba(20,20,18,0.75), transparent)" } },
+            React.createElement("div", { style: { ...fAnton, fontSize: "clamp(16px,3vw,26px)", color: C.paper, textTransform: "uppercase" } }, s.title)),
+        slides.length > 1 && React.createElement("div", { style: { position: "absolute", bottom: 12, right: 16, display: "flex", gap: 6 } },
+            slides.map((_, i) => React.createElement("div", {
+                key: i, onClick: () => setIdx(i),
+                style: { width: 8, height: 8, borderRadius: "50%", cursor: "pointer", background: i === idx ? C.vibe : "rgba(255,255,255,0.6)", border: "1px solid " + C.ink }
+            }))),
+        slides.length > 1 && React.createElement(React.Fragment, null,
+            React.createElement("button", { onClick: () => setIdx((i) => (i - 1 + slides.length) % slides.length), style: { position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", width: 30, height: 30, borderRadius: "50%", border: "1.5px solid " + C.ink, background: C.paper, cursor: "pointer" } }, "\u2039"),
+            React.createElement("button", { onClick: () => setIdx((i) => (i + 1) % slides.length), style: { position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", width: 30, height: 30, borderRadius: "50%", border: "1.5px solid " + C.ink, background: C.paper, cursor: "pointer" } }, "\u203A")));
+}
+function ProductCard({ p, onAdd, onOpen }) {
+    const hasSizes = p.sizes && p.sizes.length > 0;
+    const outOfStock = (p.stock || 0) <= 0;
+    const off = pctOff(p.price, p.oldPrice);
+    const quickAdd = (e) => {
+        e.stopPropagation();
+        if (outOfStock) return;
+        if (hasSizes) onOpen();
+        else onAdd(p, null, 1);
+    };
+    return (React.createElement("div", { style: { background: C.white, border: "1.5px solid " + C.ink, cursor: "pointer", opacity: outOfStock ? 0.6 : 1 }, onClick: onOpen },
+        React.createElement("div", { style: { position: "relative", aspectRatio: "1/1", overflow: "hidden", borderBottom: "1.5px solid " + C.ink, background: C.paper2 } },
+            p.badge && !outOfStock && React.createElement("span", { style: { position: "absolute", top: 6, left: 6, ...fMono, fontSize: 8, letterSpacing: "0.04em", padding: "3px 6px", background: p.badge === "Hot" ? C.vibe : C.ink, color: C.white, textTransform: "uppercase" } }, p.badge),
+            outOfStock && React.createElement("span", { style: { position: "absolute", top: 6, left: 6, ...fMono, fontSize: 8, letterSpacing: "0.04em", padding: "3px 6px", background: "#b02a2a", color: C.white, textTransform: "uppercase" } }, "Out of Stock"),
+            off && !outOfStock && React.createElement("span", { style: { position: "absolute", top: 6, right: 6, ...fMono, fontSize: 8, letterSpacing: "0.04em", padding: "3px 6px", background: "#1e7a3a", color: C.white } }, off + "% OFF"),
+            React.createElement("img", { src: primaryImage(p), alt: p.name, style: { width: "100%", height: "100%", objectFit: "cover" } })),
+        React.createElement("div", { style: { padding: "8px 9px 9px" } },
+            React.createElement("div", { style: { ...fMono, fontSize: 8, color: C.khaki, textTransform: "uppercase" } }, p.category),
+            React.createElement("div", { style: { fontWeight: 700, fontSize: 12, marginTop: 3, lineHeight: 1.25, minHeight: 30, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" } }, p.name),
+            React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 6 } },
+                React.createElement("div", { style: { minWidth: 0 } },
+                    React.createElement("span", { style: { ...fMono, fontWeight: 700, fontSize: 12 } }, money(p.price)),
+                    p.oldPrice && React.createElement("span", { style: { ...fMono, fontSize: 9, color: C.khaki, textDecoration: "line-through", marginLeft: 4, display: "block" } }, money(p.oldPrice))),
+                React.createElement("button", { onClick: quickAdd, title: hasSizes ? "Select size" : "Quick add", style: { width: 24, height: 24, flexShrink: 0, border: "1.5px solid " + C.ink, background: "transparent", cursor: "pointer", fontSize: 13 } }, Ic.plus)))));
+}
+/* ================= PRODUCT DETAIL ================= */
+function ProductDetail({ product, allProducts, onBack, onAdd, onGoCart, onGoCheckout, onOpenProduct }) {
+    const images = (product && product.images && product.images.length) ? product.images : [primaryImage(product)];
+    const [activeImg, setActiveImg] = useState(0);
+    const [size, setSize] = useState("");
+    const [qty, setQty] = useState(1);
+    const [err, setErr] = useState("");
+    const touchX = React.useRef(null);
+    const nextImg = () => setActiveImg((i) => (i + 1) % images.length);
+    const prevImg = () => setActiveImg((i) => (i - 1 + images.length) % images.length);
+    const onTouchStart = (e) => { touchX.current = e.touches[0].clientX; };
+    const onTouchEnd = (e) => {
+        if (touchX.current === null) return;
+        const dx = e.changedTouches[0].clientX - touchX.current;
+        if (Math.abs(dx) > 40 && images.length > 1) { dx < 0 ? nextImg() : prevImg(); }
+        touchX.current = null;
+    };
+    if (!product) {
+        return React.createElement("div", { style: { maxWidth: 700, margin: "0 auto", padding: "40px 20px" } },
+            React.createElement("button", { onClick: onBack, style: backBtnStyle }, Ic.back, " Back to Store"),
+            React.createElement("div", { style: { ...fMono, fontSize: 13, color: C.khaki, marginTop: 20 } }, "Product ta ar available nei."));
+    }
+    const hasSizes = product.sizes && product.sizes.length > 0;
+    const outOfStock = (product.stock || 0) <= 0;
+    const off = pctOff(product.price, product.oldPrice);
+    const related = (allProducts || []).filter((p) => p.category === product.category && p.id !== product.id).slice(0, 4);
+    const validate = () => {
+        if (outOfStock) return false;
+        if (hasSizes && !size) { setErr("সাইজ সিলেক্ট করে অর্ডার করুন।"); return false; }
+        setErr("");
+        return true;
+    };
+    const handleAdd = () => {
+        if (!validate()) return;
+        onAdd(product, size || null, qty, images[activeImg]);
+        onGoCart();
+    };
+    const handleBuyNow = () => {
+        if (!validate()) return;
+        onAdd(product, size || null, qty, images[activeImg]);
+        onGoCheckout();
+    };
+    const [shareMsg, setShareMsg] = useState("");
+    const handleShare = () => {
+        const url = window.location.origin + "/product/" + product.id;
+        const shareData = { title: product.name, text: product.name + " \u2014 " + money(product.price), url: url };
+        if (navigator.share) {
+            navigator.share(shareData).catch(() => {});
+        } else if (navigator.clipboard) {
+            navigator.clipboard.writeText(url).then(() => { setShareMsg("Link copied!"); setTimeout(() => setShareMsg(""), 2000); });
+        }
+    };
+    return React.createElement("div", { style: { maxWidth: 1100, margin: "0 auto", padding: "16px 16px 80px" } },
+        React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center" } },
+            React.createElement("button", { onClick: onBack, style: backBtnStyle }, Ic.back, " Back to Store"),
+            React.createElement("div", { style: { position: "relative" } },
+                React.createElement("button", { onClick: handleShare, style: { ...fMono, fontSize: 12, display: "flex", alignItems: "center", gap: 6, background: "transparent", border: "1.5px solid " + C.ink, padding: "8px 12px", cursor: "pointer" } }, "\u2197 Share"),
+                shareMsg && React.createElement("div", { style: { position: "absolute", top: "110%", right: 0, ...fMono, fontSize: 11, background: C.ink, color: C.paper, padding: "5px 10px", whiteSpace: "nowrap" } }, shareMsg))),
+        React.createElement("div", { className: "vz-pd-grid", style: { marginTop: 16 } },
+            React.createElement("div", null,
+                React.createElement("div", {
+                    style: { position: "relative", border: "1.5px solid " + C.ink, aspectRatio: "1/1", overflow: "hidden", background: C.paper2, touchAction: "pan-y" },
+                    onTouchStart: onTouchStart, onTouchEnd: onTouchEnd
+                },
+                    off && React.createElement("span", { style: { position: "absolute", top: 10, left: 10, zIndex: 2, ...fMono, fontSize: 11, fontWeight: 700, padding: "5px 10px", background: "#1e7a3a", color: C.white } }, off + "% OFF"),
+                    React.createElement("img", { src: images[activeImg], alt: product.name, style: { width: "100%", height: "100%", objectFit: "cover", userSelect: "none", pointerEvents: "none" } }),
+                    images.length > 1 && React.createElement(React.Fragment, null,
+                        React.createElement("button", { onClick: prevImg, style: { position: "absolute", left: 8, top: "50%", transform: "translateY(-50%)", width: 32, height: 32, borderRadius: "50%", border: "1.5px solid " + C.ink, background: C.paper, cursor: "pointer" } }, "\u2039"),
+                        React.createElement("button", { onClick: nextImg, style: { position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", width: 32, height: 32, borderRadius: "50%", border: "1.5px solid " + C.ink, background: C.paper, cursor: "pointer" } }, "\u203A"),
+                        React.createElement("div", { style: { position: "absolute", bottom: 10, left: 0, right: 0, display: "flex", justifyContent: "center", gap: 6 } },
+                            images.map((_, i) => React.createElement("div", { key: i, style: { width: 7, height: 7, borderRadius: "50%", background: i === activeImg ? C.vibe : "rgba(255,255,255,0.7)", border: "1px solid " + C.ink } }))))),
+                images.length > 1 && React.createElement("div", { style: { display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" } },
+                    images.map((img, i) => React.createElement("div", {
+                        key: i, onClick: () => setActiveImg(i),
+                        style: { width: 56, height: 56, border: "1.5px solid " + (i === activeImg ? C.vibe : C.ink), cursor: "pointer", overflow: "hidden", opacity: i === activeImg ? 1 : 0.7 }
+                    }, React.createElement("img", { src: img, alt: "", style: { width: "100%", height: "100%", objectFit: "cover" } }))))),
+
+            React.createElement("div", null,
+                React.createElement("div", { style: { ...fMono, fontSize: 11, color: C.khaki, textTransform: "uppercase", letterSpacing: "0.06em" } }, product.category),
+                product.badge && React.createElement("span", { style: { display: "inline-block", ...fMono, fontSize: 10, padding: "4px 8px", marginTop: 8, background: product.badge === "Hot" ? C.vibe : C.ink, color: C.white, textTransform: "uppercase" } }, product.badge),
+                React.createElement("h1", { style: { fontSize: "clamp(19px,3.4vw,26px)", fontWeight: 700, marginTop: 8, lineHeight: 1.25 } }, product.name),
+
+                hasSizes && React.createElement("div", { style: { marginTop: 18 } },
+                    React.createElement(FieldLabel, null, "Select Size"),
+                    React.createElement("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" } },
+                        product.sizes.map((s) => React.createElement("button", {
+                            key: s, onClick: () => { setSize(s); setErr(""); },
+                            style: { ...fMono, fontSize: 13, minWidth: 44, padding: "9px 12px", border: "1.5px solid " + C.ink, background: size === s ? C.ink : "transparent", color: size === s ? C.paper : C.ink, cursor: "pointer" }
+                        }, s)))),
+
+                React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 22, paddingTop: 18, borderTop: "1px solid " + C.ink + "22" } },
+                    React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10 } },
+                        React.createElement("button", { onClick: () => setQty((q) => Math.max(1, q - 1)), style: qtyBtnStyle }, Ic.minus),
+                        React.createElement("span", { style: { ...fMono, fontSize: 14, width: 22, textAlign: "center" } }, qty),
+                        React.createElement("button", { onClick: () => setQty((q) => q + 1), style: qtyBtnStyle }, Ic.plus)),
+                    React.createElement("div", { style: { textAlign: "right" } },
+                        product.oldPrice && React.createElement("div", { style: { ...fMono, fontSize: 13, color: C.khaki, textDecoration: "line-through" } }, money(product.oldPrice)),
+                        React.createElement("div", { style: { ...fMono, fontSize: 22, fontWeight: 700, color: off ? "#1e7a3a" : C.ink } }, money(product.price)))),
+
+                err && React.createElement("div", { style: { ...fMono, fontSize: 12, color: C.vibeDim, marginTop: 10 } }, err),
+
+                React.createElement("div", { style: { display: "flex", gap: 10, marginTop: 16 } },
+                    React.createElement("button", { onClick: handleAdd, disabled: outOfStock, style: { ...fMono, flex: 1, fontSize: 13, letterSpacing: "0.05em", textTransform: "uppercase", background: C.ink, color: C.paper, border: "2px solid " + C.ink, padding: "15px 10px", cursor: outOfStock ? "not-allowed" : "pointer", opacity: outOfStock ? 0.4 : 1 } }, outOfStock ? "Out of Stock" : "\uD83D\uDED2 Add to Cart"),
+                    !outOfStock && React.createElement("button", { onClick: handleBuyNow, style: { ...fMono, flex: 1, fontSize: 13, letterSpacing: "0.05em", textTransform: "uppercase", background: C.vibe, color: C.white, border: "2px solid " + C.vibe, padding: "15px 10px", cursor: "pointer" } }, "\u26A1 Buy Now")),
+
+                product.stock !== undefined && React.createElement("div", { style: { ...fMono, fontSize: 11, color: C.khaki, marginTop: 12 } },
+                    product.stock > 0 ? product.stock + " pcs in stock" : "Out of stock"),
+
+                product.description && React.createElement("div", { style: { marginTop: 26, paddingTop: 20, borderTop: "1px solid " + C.ink + "22" } },
+                    React.createElement("div", { style: { ...fMono, fontSize: 11, color: C.khaki, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 } }, "Description"),
+                    React.createElement("p", { style: { fontSize: 14, lineHeight: 1.7, color: "#444" } }, product.description)))),
+
+        related.length > 0 && React.createElement("div", { style: { marginTop: 50 } },
+            React.createElement("div", { style: { ...fAnton, fontSize: 20, textTransform: "uppercase", marginBottom: 16 } }, "You May Also Like"),
+            React.createElement("div", { className: "vz-grid" },
+                related.map((p) => React.createElement(ProductCard, { key: p.id, p: p, onAdd: onAdd, onOpen: () => onOpenProduct(p) })))));
+}
+/* ================= TRACK ORDER ================= */
+const STEPS = ["pending", "verified", "shipped"];
+const STEP_LABELS = { pending: "Order Received", verified: "Payment Verified", shipped: "Shipped" };
+function OrderStatusCard({ o }) {
+    return React.createElement("div", { style: { border: "1.5px solid " + C.ink, padding: 18, background: C.white } },
+        React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start" } },
+            React.createElement("div", null,
+                React.createElement("div", { style: { ...fMono, fontSize: 11, color: C.khaki } }, "ORDER #" + o.id.slice(-6).toUpperCase()),
+                React.createElement("div", { style: { ...fMono, fontSize: 12, color: C.khaki, marginTop: 2 } }, new Date(o.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }))),
+            React.createElement(StatusPill, { status: o.status })),
+
+        o.status === "rejected"
+            ? React.createElement("div", { style: { ...fMono, fontSize: 12, color: "#b02a2a", marginTop: 14 } }, "Payment verify kora jayni. Jogajog korun: " + (o.customer.phone || ""))
+            : React.createElement("div", { style: { display: "flex", alignItems: "center", marginTop: 20 } },
+                STEPS.map((s, i) => {
+                    const curIdx = STEPS.indexOf(o.status === "rejected" ? "pending" : o.status);
+                    const done = i <= curIdx;
+                    return React.createElement(React.Fragment, { key: s },
+                        React.createElement("div", { style: { display: "flex", flexDirection: "column", alignItems: "center", flex: i === STEPS.length - 1 ? "0 0 auto" : 1 } },
+                            React.createElement("div", { style: { width: 22, height: 22, borderRadius: "50%", background: done ? C.vibe : C.paper2, border: "1.5px solid " + (done ? C.vibe : C.ink), display: "flex", alignItems: "center", justifyContent: "center", color: done ? C.white : C.khaki, fontSize: 11 } }, done ? "\u2713" : i + 1),
+                            React.createElement("div", { style: { ...fMono, fontSize: 9, marginTop: 6, textAlign: "center", color: done ? C.ink : C.khaki, maxWidth: 70 } }, STEP_LABELS[s])),
+                        i < STEPS.length - 1 && React.createElement("div", { style: { flex: 1, height: 2, background: i < curIdx ? C.vibe : C.ink + "22", marginBottom: 18 } }));
+                })),
+
+        o.trackingNote && React.createElement("div", { style: { marginTop: 16, background: C.paper2, padding: 12, fontSize: 13, display: "flex", gap: 8, alignItems: "flex-start" } },
+            React.createElement("span", null, "\uD83D\uDCCD"),
+            React.createElement("span", null, o.trackingNote)),
+
+        React.createElement("div", { style: { marginTop: 18, borderTop: "1px solid " + C.ink + "22", paddingTop: 12 } },
+            o.items.map((i, idx) => React.createElement("div", { key: idx, style: { display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 4 } },
+                React.createElement("span", null, i.name, i.size ? " (" + i.size + ")" : "", " \u00D7 ", i.qty),
+                React.createElement("span", { style: fMono }, money(i.price * i.qty)))),
+            React.createElement("div", { style: { display: "flex", justifyContent: "space-between", ...fMono, fontWeight: 700, fontSize: 14, marginTop: 8 } },
+                React.createElement("span", null, "Total"),
+                React.createElement("span", null, money(o.grandTotal)))));
+}
+function TrackOrder({ orders, onBack }) {
+    const [phone, setPhone] = useState("");
+    const [searched, setSearched] = useState(false);
+    const matches = orders.filter((o) => o.customer && o.customer.phone && phone && o.customer.phone.replace(/\D/g, "").endsWith(phone.replace(/\D/g, "")) && phone.replace(/\D/g, "").length >= 6);
+    return React.createElement("div", { style: { maxWidth: 640, margin: "0 auto", padding: "30px 20px 80px" } },
+        React.createElement("button", { onClick: onBack, style: backBtnStyle }, Ic.back, " Back to Store"),
+        React.createElement("h2", { style: { ...fAnton, fontSize: 28, textTransform: "uppercase", margin: "18px 0 20px" } }, "Track Your Order"),
+        React.createElement(FieldLabel, null, "Phone Number diye order khujo"),
+        React.createElement("div", { style: { display: "flex", gap: 10 } },
+            React.createElement("input", { value: phone, onChange: (e) => setPhone(e.target.value), placeholder: "01XXXXXXXXX", style: { ...inputStyle, flex: 1 } }),
+            React.createElement("button", { onClick: () => setSearched(true), style: { ...fMono, fontSize: 12, background: C.ink, color: C.paper, border: "none", padding: "0 20px", cursor: "pointer" } }, "Search")),
+
+        searched && matches.length === 0 && React.createElement("div", { style: { ...fMono, fontSize: 13, color: C.khaki, marginTop: 30 } }, "Ei number diye kono order paoa jayni."),
+
+        matches.length > 0 && React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 16, marginTop: 30 } },
+            matches.map((o) => React.createElement(OrderStatusCard, { key: o.id, o: o }))));
+}
+function GoogleGlyph() {
+    return React.createElement("svg", { width: 18, height: 18, viewBox: "0 0 48 48" },
+        React.createElement("path", { fill: "#FFC107", d: "M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 8 3l6-6C34.5 5.5 29.5 3.5 24 3.5 12.7 3.5 3.5 12.7 3.5 24S12.7 44.5 24 44.5 44.5 35.3 44.5 24c0-1.2-.1-2.4-.3-3.5z" }),
+        React.createElement("path", { fill: "#FF3D00", d: "M6.3 14.7l6.6 4.8C14.6 15.9 18.9 13 24 13c3.1 0 5.8 1.1 8 3l6-6C34.5 5.5 29.5 3.5 24 3.5c-7.6 0-14.2 4.3-17.7 10.6z" }),
+        React.createElement("path", { fill: "#4CAF50", d: "M24 44.5c5.4 0 10.3-1.9 14-5.6l-6.5-5.5c-2 1.4-4.6 2.3-7.5 2.3-5.3 0-9.8-3.4-11.4-8.1l-6.6 5.1C9.6 40 16.2 44.5 24 44.5z" }),
+        React.createElement("path", { fill: "#1976D2", d: "M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.3 4.3-4.3 5.7l6.5 5.5c-.5.4 6.9-5 6.9-15.7 0-1.2-.1-2.4-.3-3.5z" }));
+}
+function LoginForm({ onDone }) {
+    const [mode, setMode] = useState("login"); // login | signup
+    const [name, setName] = useState("");
+    const [email, setEmail] = useState("");
+    const [phone, setPhone] = useState("");
+    const [password, setPassword] = useState("");
+    const [busy, setBusy] = useState(false);
+    const [err, setErr] = useState("");
+
+    const handleGoogle = () => {
+        setBusy(true); setErr("");
+        signInWithGoogle().then(onDone).catch((e) => setErr(e.message || "Login failed")).finally(() => setBusy(false));
+    };
+    const handleSubmit = () => {
+        setErr("");
+        if (!email || !password) { setErr("Email আর Password বসাতে হবে "); return; }
+        if (mode === "signup" && (!name || !phone)) { setErr("সব ফিলাপ করতে হবে"); return; }
+        if (password.length < 6) { setErr("পাসওয়ার্ড কমপক্ষে ৬ ক্যারেক্টার হতে হবে "); return; }
+        setBusy(true);
+        const action = mode === "signup" ? signUpWithPassword(email, phone, password, name) : signInWithPassword(email, password);
+        action.then(onDone).catch((e) => {
+            const msg = (e.code === "auth/email-already-in-use") ? "এই ইমেইল দিয়ে অলরেডি একাউন্ট আছে , লগইন করুন।"
+                : (e.code === "auth/wrong-password" || e.code === "auth/invalid-credential") ? "ইমেইল বা পাসওয়ার্ড ভুল হয়েছে।"
+                : (e.code === "auth/user-not-found") ? "এই ইমেইল দিয়ে কোনো একাউন্ট পাওয়া যায়নি। Sign Up করুন।"
+                : (e.code === "auth/invalid-email") ? "সঠিক ইমেইল দিন।"
+                : (e.message || "কিছু ভুল হয়েছে");
+            setErr(msg);
+        }).finally(() => setBusy(false));
+    };
+
+    return React.createElement("div", null,
+        React.createElement("div", { style: { display: "flex", border: "1.5px solid " + C.ink, marginBottom: 20 } },
+            ["login", "signup"].map((m) => React.createElement("button", {
+                key: m, onClick: () => { setMode(m); setErr(""); },
+                style: { ...fMono, fontSize: 12, textTransform: "uppercase", letterSpacing: "0.05em", flex: 1, padding: "12px 0", border: "none", cursor: "pointer", background: mode === m ? C.ink : "transparent", color: mode === m ? C.paper : C.ink }
+            }, m === "login" ? "Login" : "Sign Up"))),
+
+        mode === "signup" && React.createElement(React.Fragment, null,
+            React.createElement(FieldLabel, null, "Full Name"),
+            React.createElement(TextInput, { value: name, onChange: setName, placeholder: "আপনার সম্পূর্ণ নাম দিন" })),
+
+        React.createElement(FieldLabel, null, "Email"),
+        React.createElement(TextInput, { value: email, onChange: setEmail, placeholder: "you@example.com" }),
+
+        mode === "signup" && React.createElement(React.Fragment, null,
+            React.createElement(FieldLabel, null, "Phone Number"),
+            React.createElement(TextInput, { value: phone, onChange: setPhone, placeholder: "01XXXXXXXXX" })),
+
+        React.createElement(FieldLabel, null, "Password"),
+        React.createElement("input", { type: "password", value: password, onChange: (e) => setPassword(e.target.value), placeholder: "\u2022\u2022\u2022\u2022\u2022\u2022", style: inputStyle }),
+
+        err && React.createElement("div", { style: { ...fMono, fontSize: 12, color: C.vibeDim, marginTop: 12 } }, err),
+
+        React.createElement("button", {
+            onClick: handleSubmit, disabled: busy,
+            style: { ...primaryBtnStyle, marginTop: 18, opacity: busy ? 0.6 : 1, cursor: busy ? "not-allowed" : "pointer" }
+        }, busy ? "Please wait…" : (mode === "signup" ? "Create Account" : "Login")),
+
+        React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, margin: "22px 0" } },
+            React.createElement("div", { style: { flex: 1, height: 1, background: C.ink + "33" } }),
+            React.createElement("span", { style: { ...fMono, fontSize: 11, color: C.khaki } }, "OR"),
+            React.createElement("div", { style: { flex: 1, height: 1, background: C.ink + "33" } })),
+
+        React.createElement("button", {
+            onClick: handleGoogle, disabled: busy,
+            style: { ...fMono, fontSize: 13, width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, background: C.white, border: "1.5px solid " + C.ink, padding: "14px 20px", cursor: busy ? "not-allowed" : "pointer" }
+        }, React.createElement(GoogleGlyph, null), "Continue with Google"));
+}
+function AccountView({ currentUser, orders, onBack }) {
+    const [profile, setProfile] = useState(null);
+    useEffect(() => {
+        if (currentUser) {
+            db.ref("users/" + currentUser.uid).once("value").then((snap) => setProfile(snap.val() || null)).catch(() => setProfile(null));
+        } else {
+            setProfile(null);
+        }
+    }, [currentUser]);
+    if (currentUser === undefined) {
+        return React.createElement("div", { style: { maxWidth: 500, margin: "0 auto", padding: "60px 20px", textAlign: "center", ...fMono, fontSize: 13, color: C.khaki } }, "Loading\u2026");
+    }
+    if (!currentUser) {
+        return React.createElement("div", { style: { maxWidth: 420, margin: "0 auto", padding: "40px 20px 80px" } },
+            React.createElement("button", { onClick: onBack, style: { ...backBtnStyle, marginBottom: 20 } }, Ic.back, " Back to Store"),
+            React.createElement("h2", { style: { ...fAnton, fontSize: 26, textTransform: "uppercase", marginBottom: 8 } }, "Sign In"),
+            React.createElement("p", { style: { fontSize: 13, color: C.khaki, marginBottom: 22, lineHeight: 1.6 } }, "লগইন করলে নিজের সব অর্ডার একজায়গায় দেখতে পারবেন।"),
+            React.createElement(LoginForm, { onDone: () => {} }),
+            React.createElement("div", { style: { ...fMono, fontSize: 11, color: C.khaki, marginTop: 26, textAlign: "center" } }, "লগইন না করেও অর্ডার করতে পারবেন \u2014 checkout এ গেস্ট হিসেবে এগিয়ে যান।"));
+    }
+    const realEmail = (profile && profile.email) || (currentUser.email && !currentUser.email.endsWith("@vibezone.app") ? currentUser.email : "");
+    const realPhone = (profile && profile.phone) || "";
+    const myOrders = orders.filter((o) => o.customer && ((realEmail && o.customer.email && o.customer.email.toLowerCase() === realEmail.toLowerCase()) || (realPhone && o.customer.phone && o.customer.phone.replace(/\D/g, "").endsWith(realPhone.replace(/\D/g, "")))));
+    return React.createElement("div", { style: { maxWidth: 640, margin: "0 auto", padding: "30px 20px 80px" } },
+        React.createElement("button", { onClick: onBack, style: backBtnStyle }, Ic.back, " Back to Store"),
+        React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 14, marginTop: 20 } },
+            currentUser.photoURL
+                ? React.createElement("img", { src: currentUser.photoURL, alt: "", style: { width: 54, height: 54, borderRadius: "50%", border: "1.5px solid " + C.ink } })
+                : React.createElement("div", { style: { width: 54, height: 54, borderRadius: "50%", background: C.ink, color: C.paper, display: "flex", alignItems: "center", justifyContent: "center", ...fAnton, fontSize: 22 } }, ((profile && profile.name) || currentUser.displayName || realEmail || realPhone || "U").charAt(0)),
+            React.createElement("div", null,
+                React.createElement("div", { style: { fontWeight: 700, fontSize: 16 } }, (profile && profile.name) || currentUser.displayName || "Customer"),
+                React.createElement("div", { style: { ...fMono, fontSize: 12, color: C.khaki } }, realEmail || realPhone || ""))),
+        React.createElement("button", {
+            onClick: () => signOutUser(),
+            style: { ...fMono, fontSize: 12, marginTop: 16, background: "transparent", border: "1.5px solid " + C.ink, padding: "8px 16px", cursor: "pointer" }
+        }, Ic.logout, " Logout"),
+
+        React.createElement("h3", { style: { ...fAnton, fontSize: 20, textTransform: "uppercase", marginTop: 34, marginBottom: 16 } }, "My Orders"),
+        myOrders.length === 0 && React.createElement("div", { style: { ...fMono, fontSize: 13, color: C.khaki } }, "এখনো কোনো অর্ডার পাওয়া যায়নি| Checkout-এ এই ইমেইল/ফোন দিলে অর্ডার গুলো এখানে দেখা যাবে ."),
+        myOrders.length > 0 && React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 16 } },
+            myOrders.map((o) => React.createElement(OrderStatusCard, { key: o.id, o: o }))));
+}
+/* ================= CART ================= */
+function CartView({ cart, changeQty, removeFromCart, total, onBack, onCheckout }) {
+    return (React.createElement("div", { style: { maxWidth: 700, margin: "0 auto", padding: "30px 20px 80px" } },
+        React.createElement("button", { onClick: onBack, style: backBtnStyle },
+            Ic.back,
+            " Continue Shopping"),
+        React.createElement("h2", { style: { ...fAnton, fontSize: 30, textTransform: "uppercase", margin: "18px 0" } }, "Your Cart"),
+        cart.length === 0 && React.createElement("div", { style: { ...fMono, fontSize: 13, color: C.khaki } }, "Cart is empty."),
+        cart.map((i) => (React.createElement("div", { key: i.id, style: { display: "flex", gap: 14, alignItems: "center", padding: "14px 0", borderBottom: "1px solid " + C.ink + "22" } },
+            React.createElement("img", { src: i.image, alt: i.name, style: { width: 64, height: 64, objectFit: "cover", border: "1px solid " + C.ink } }),
+            React.createElement("div", { style: { flex: 1 } },
+                React.createElement("div", { style: { fontWeight: 700, fontSize: 14 } }, i.name),
+                i.size && React.createElement("div", { style: { ...fMono, fontSize: 11, color: C.khaki, marginTop: 2 } }, "Size: " + i.size),
+                React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6, marginTop: 4 } },
+                    React.createElement("span", { style: { ...fMono, fontSize: 13 } }, money(i.price)),
+                    i.oldPrice && i.oldPrice > i.price && React.createElement("span", { style: { ...fMono, fontSize: 11, color: C.khaki, textDecoration: "line-through" } }, money(i.oldPrice)),
+                    pctOff(i.price, i.oldPrice) && React.createElement("span", { style: { ...fMono, fontSize: 10, color: "#1e7a3a", fontWeight: 700 } }, pctOff(i.price, i.oldPrice) + "% off"))),
+            React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8 } },
+                React.createElement("button", { onClick: () => changeQty(i.id, -1), style: qtyBtnStyle }, Ic.minus),
+                React.createElement("span", { style: { ...fMono, fontSize: 13, width: 18, textAlign: "center" } }, i.qty),
+                React.createElement("button", { onClick: () => changeQty(i.id, 1), style: qtyBtnStyle }, Ic.plus)),
+            React.createElement("button", { onClick: () => removeFromCart(i.id), style: { background: "none", border: "none", cursor: "pointer", color: C.vibeDim, fontSize: 16 } }, Ic.trash)))),
+        cart.length > 0 && (React.createElement("div", { style: { marginTop: 26 } },
+            React.createElement("div", { style: { display: "flex", justifyContent: "space-between", ...fMono, fontSize: 16, fontWeight: 700, marginBottom: 16 } },
+                React.createElement("span", null, "Subtotal"),
+                React.createElement("span", null, money(total))),
+            React.createElement("button", { onClick: onCheckout, style: primaryBtnStyle }, "Proceed to Checkout \u2192")))));
+}
+const qtyBtnStyle = { width: 26, height: 26, border: "1.5px solid " + C.ink, background: "transparent", cursor: "pointer" };
+const backBtnStyle = { ...fMono, fontSize: 12, letterSpacing: "0.06em", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 6, color: C.ink, padding: 0 };
+const primaryBtnStyle = { width: "100%", background: C.ink, color: C.paper, border: "2px solid " + C.ink, padding: "15px 20px", ...fMono, fontSize: 13, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer" };
+/* ================= CHECKOUT ================= */
+function Checkout({ cart, total, catalog, currentUser, onBack, onPlace }) {
+    const [step, setStep] = useState(1);
+    const [name, setName] = useState((currentUser && currentUser.displayName) || "");
+    const [phone, setPhone] = useState("");
+    const [email, setEmail] = useState((currentUser && currentUser.email) || "");
+    const [district, setDistrict] = useState("");
+    const [thana, setThana] = useState("");
+    const [area, setArea] = useState("");
+    const [address, setAddress] = useState("");
+    const [label, setLabel] = useState("Home");
+    const [method, setMethod] = useState("bkash");
+    const [senderNumber, setSenderNumber] = useState("");
+    const [amountSent, setAmountSent] = useState("");
+    const [trxId, setTrxId] = useState("");
+    const [copied, setCopied] = useState("");
+    const [locating, setLocating] = useState(false);
+    const [locateMsg, setLocateMsg] = useState("");
+    const [couponInput, setCouponInput] = useState("");
+    const [appliedCoupon, setAppliedCoupon] = useState(null);
+    const [couponMsg, setCouponMsg] = useState("");
+    const applyCoupon = () => {
+        const code = couponInput.trim().toUpperCase();
+        const found = (catalog.coupons || []).find((c) => c.active && c.code.toUpperCase() === code);
+        if (!found) { setCouponMsg("Ei coupon code valid na."); setAppliedCoupon(null); return; }
+        setAppliedCoupon(found);
+        setCouponMsg("Coupon apply hoyeche!");
+    };
+    const removeCoupon = () => { setAppliedCoupon(null); setCouponInput(""); setCouponMsg(""); };
+    const discountAmount = appliedCoupon ? (appliedCoupon.type === "percent" ? Math.round((total * appliedCoupon.value) / 100) : Math.min(appliedCoupon.value, total)) : 0;
+    const onDistrictChange = (d) => { setDistrict(d); setThana(""); };
+    const detectLocation = () => {
+        if (!navigator.geolocation) { setLocateMsg("Ei browser-e location detect kora jay na."); return; }
+        setLocating(true);
+        setLocateMsg("");
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                const { latitude, longitude } = pos.coords;
+                fetch("https://nominatim.openstreetmap.org/reverse?format=json&lat=" + latitude + "&lon=" + longitude + "&zoom=18&addressdetails=1")
+                    .then((r) => r.json())
+                    .then((data) => {
+                        const a = data.address || {};
+                        const guessDistrict = BD_DISTRICTS.find((d) => (a.state_district || a.county || a.city || "").toLowerCase().includes(d.toLowerCase()));
+                        const guessThana = guessDistrict ? BD_LOCATIONS[guessDistrict].find((t) => (a.suburb || a.city_district || a.town || "").toLowerCase().includes(t.toLowerCase().split(" ")[0])) : null;
+                        if (guessDistrict) { setDistrict(guessDistrict); if (guessThana) setThana(guessThana); }
+                        setArea(a.suburb || a.neighbourhood || a.village || "");
+                        setAddress(data.display_name || "");
+                        setLocating(false);
+                        if (!guessDistrict) setLocateMsg("লোকেশন পাওয়া গেছে। কিন্তু জেলা/থানা মিল পাওয়া যায়নি। নিচে থেকে সিলেক্ট করে অর্ডার করুন।");
+                    })
+                    .catch(() => { setLocateMsg("এড্রেস বের করতে সমস্যা হচ্ছে। নিচে থেকে সিলেক্ট করে অর্ডার করুন।"); setLocating(false); });
+            },
+            (err) => { setLocateMsg("লোকেশন এক্সেস দেওয়া নেই / ডিটেক্ট হয়নি। দয়া করে লোকেশন এক্সেস দিয়ে আবার চেষ্টা করুন।"); setLocating(false); },
+            { enableHighAccuracy: true, timeout: 10000 }
+        );
+    };
+    const deliveryCharge = catalog.deliveryCharge;
+    const grandTotal = total - discountAmount + deliveryCharge;
+    const payNumber = catalog.paymentNumbers[method];
+    const copy = (text, key) => { navigator.clipboard && navigator.clipboard.writeText(text).catch(() => { }); setCopied(key); setTimeout(() => setCopied(""), 1500); };
+    const canContinue = name && phone && district && thana && area && address;
+    const canPlace = senderNumber && amountSent && trxId;
+    const methodLabels = { bkash: "bKash Payment", nagad: "Nagad Payment", rocket: "Rocket Payment" };
+    const methodSteps = { bkash: "Send Money", nagad: "Payment", rocket: "Cash Out" };
+    return (React.createElement("div", { style: { maxWidth: 640, margin: "0 auto", padding: "30px 20px 100px" } },
+        React.createElement("button", { onClick: onBack, style: backBtnStyle },
+            Ic.back,
+            " Back to Cart"),
+        React.createElement("h2", { style: { ...fAnton, fontSize: 28, textTransform: "uppercase", margin: "18px 0 24px" } }, "Checkout"),
+        step === 1 && (React.createElement("div", null,
+            React.createElement(FieldLabel, null, "Full Name"),
+            React.createElement(TextInput, { value: name, onChange: setName, placeholder: "আপনার সম্পূর্ণ নাম দিন" }),
+            React.createElement(FieldLabel, null, "Phone Number"),
+            React.createElement(TextInput, { value: phone, onChange: setPhone, placeholder: "01XXXXXXXXX" }),
+            React.createElement(FieldLabel, null, "ইমেইল (optional \u2014 অর্ডার কনফার্মেশন পেতে)"),
+            React.createElement(TextInput, { value: email, onChange: setEmail, placeholder: "you@example.com" }),
+            React.createElement("button", {
+                onClick: detectLocation, disabled: locating,
+                style: { ...fMono, fontSize: 12, display: "flex", alignItems: "center", gap: 8, background: locating ? C.paper2 : C.ink, color: locating ? C.ink : C.paper, border: "1.5px solid " + C.ink, padding: "10px 14px", marginTop: 16, cursor: locating ? "not-allowed" : "pointer" }
+            }, locating ? "Detecting location…" : "\uD83D\uDCCD Auto Detect My Location"),
+            locateMsg && React.createElement("div", { style: { ...fMono, fontSize: 11, color: C.vibeDim, marginTop: 8 } }, locateMsg),
+            React.createElement(FieldLabel, null, "\u099C\u09C7\u09B2\u09BE (District)"),
+            React.createElement("select", { value: district, onChange: (e) => onDistrictChange(e.target.value), style: { ...inputStyle, appearance: "none", cursor: "pointer" } },
+                React.createElement("option", { value: "" }, "-- Select District --"),
+                BD_DISTRICTS.map((d) => React.createElement("option", { key: d, value: d }, d))),
+            React.createElement(FieldLabel, null, "\u09A5\u09BE\u09A8\u09BE / \u0989\u09AA\u099C\u09C7\u09B2\u09BE (Thana / Upazila)"),
+            React.createElement("select", { value: thana, disabled: !district, onChange: (e) => setThana(e.target.value), style: { ...inputStyle, appearance: "none", cursor: district ? "pointer" : "not-allowed", opacity: district ? 1 : 0.5 } },
+                React.createElement("option", { value: "" }, district ? "-- Select Thana/Upazila --" : "Age Jela select koro"),
+                (district ? BD_LOCATIONS[district] : []).map((t) => React.createElement("option", { key: t, value: t }, t))),
+            React.createElement(FieldLabel, null, "\u098F\u09B2\u09BE\u0995\u09BE / \u09AE\u09B9\u09B2\u09CD\u09B2\u09BE (Area / Moholla)"),
+            React.createElement(TextInput, { value: area, onChange: setArea, placeholder: "Area / Moholla name" }),
+            React.createElement(FieldLabel, null, "Detailed Address"),
+            React.createElement("textarea", { value: address, onChange: (e) => setAddress(e.target.value), placeholder: "House no, Road no\u2026", rows: "3", style: { ...inputStyle, resize: "vertical" } }),
+            React.createElement(FieldLabel, null, "Address Label"),
+            React.createElement("div", { style: { display: "flex", gap: 10, marginBottom: 20 } }, ["Home", "Office"].map((l) => (React.createElement("button", { key: l, onClick: () => setLabel(l), style: { ...fMono, fontSize: 12, padding: "9px 16px", border: "1.5px solid " + C.ink, background: label === l ? C.ink : "transparent", color: label === l ? C.paper : C.ink, cursor: "pointer" } }, l)))),
+            React.createElement("button", { disabled: !canContinue, onClick: () => setStep(2), style: { ...primaryBtnStyle, opacity: canContinue ? 1 : 0.4, cursor: canContinue ? "pointer" : "not-allowed" } }, "Continue to Payment \u2192"))),
+        step === 2 && (React.createElement("div", null,
+            React.createElement(FieldLabel, null, "Select Payment Method"),
+            React.createElement("div", { style: { position: "relative", marginBottom: 16 } },
+                React.createElement("select", { value: method, onChange: (e) => setMethod(e.target.value), style: { ...inputStyle, appearance: "none", cursor: "pointer" } },
+                    React.createElement("option", { value: "bkash" }, "bKash Payment"),
+                    React.createElement("option", { value: "nagad" }, "Nagad Payment"),
+                    React.createElement("option", { value: "rocket" }, "Rocket Payment")),
+                React.createElement("span", { style: { position: "absolute", right: 14, top: 12, pointerEvents: "none" } }, Ic.down)),
+            React.createElement("div", { style: { border: "1.5px solid " + C.ink, marginBottom: 20 } },
+                React.createElement("div", { style: { background: C.ink, color: C.paper, padding: "12px 16px", ...fMono, fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase" } }, "Payment Instructions"),
+                React.createElement("div", { style: { padding: 16 } },
+                    React.createElement(PayStep, { n: 1 },
+                        "Go to your ",
+                        methodLabels[method],
+                        " App."),
+                    React.createElement(PayStep, { n: 2 },
+                        "Select Option: ",
+                        React.createElement("b", null, methodSteps[method])),
+                    React.createElement(PayStep, { n: 3 },
+                        "Enter this Number:",
+                        React.createElement(CopyRow, { value: payNumber, onCopy: () => copy(payNumber, "num"), copied: copied === "num" })),
+                    React.createElement(PayStep, { n: 4 },
+                        "Enter Amount: ",
+                        React.createElement("span", { style: { ...fMono, fontSize: 10, background: C.vibe + "33", color: C.vibeDim, padding: "2px 8px", borderRadius: 999 } }, "Delivery Charge Only"),
+                        React.createElement(CopyRow, { value: deliveryCharge + " BDT", onCopy: () => copy(String(deliveryCharge), "amt"), copied: copied === "amt" })))),
+            React.createElement("div", { style: { border: "1.5px solid " + C.ink, padding: 16, marginBottom: 20 } },
+                React.createElement("div", { style: { fontWeight: 700, marginBottom: 12 } }, "Payment Verification"),
+                React.createElement(FieldLabel, null, "Sender Mobile Number"),
+                React.createElement(TextInput, { value: senderNumber, onChange: setSenderNumber, placeholder: "017XXXXXXXX" }),
+                React.createElement(FieldLabel, null, "Amount you Sent"),
+                React.createElement(TextInput, { value: amountSent, onChange: setAmountSent, placeholder: "0" }),
+                React.createElement(FieldLabel, null, "Transaction ID (TrxID)"),
+                React.createElement(TextInput, { value: trxId, onChange: setTrxId, placeholder: "E.g. 9G7HG6..." })),
+            React.createElement("div", { style: { border: "1.5px solid " + C.ink, padding: 16, marginBottom: 20 } },
+                React.createElement("div", { style: { fontWeight: 700, marginBottom: 12 } }, "Have a Coupon?"),
+                appliedCoupon
+                    ? React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", background: C.paper2, padding: "10px 14px" } },
+                        React.createElement("span", { style: { ...fMono, fontSize: 13 } }, appliedCoupon.code + " \u2014 " + (appliedCoupon.type === "percent" ? appliedCoupon.value + "% off" : money(appliedCoupon.value) + " off")),
+                        React.createElement("button", { onClick: removeCoupon, style: { ...fMono, fontSize: 11, background: "transparent", border: "1px solid " + C.ink, padding: "4px 10px", cursor: "pointer" } }, "Remove"))
+                    : React.createElement("div", { style: { display: "flex", gap: 10 } },
+                        React.createElement("input", { value: couponInput, onChange: (e) => setCouponInput(e.target.value), placeholder: "Enter code", style: { ...inputStyle, flex: 1, textTransform: "uppercase" } }),
+                        React.createElement("button", { onClick: applyCoupon, style: { ...fMono, fontSize: 12, background: C.ink, color: C.paper, border: "none", padding: "0 18px", cursor: "pointer" } }, "Apply")),
+                couponMsg && React.createElement("div", { style: { ...fMono, fontSize: 11, color: appliedCoupon ? "#1e7a3a" : C.vibeDim, marginTop: 8 } }, couponMsg)),
+            React.createElement(OrderSummaryBox, { cart: cart, total: total, deliveryCharge: deliveryCharge, discountAmount: discountAmount, grandTotal: grandTotal }),
+            React.createElement("button", { disabled: !canPlace, onClick: () => onPlace({
+                    createdAt: new Date().toISOString(),
+                    customer: { name, phone, email, district, thana, area, address, label },
+                    items: cart, subtotal: total, deliveryCharge, discountAmount, couponCode: appliedCoupon ? appliedCoupon.code : null, grandTotal,
+                    paymentMethod: method, paymentInfo: { senderNumber, amountSent, trxId }, status: "pending",
+                }), style: { ...primaryBtnStyle, marginTop: 20, opacity: canPlace ? 1 : 0.4, cursor: canPlace ? "pointer" : "not-allowed" } }, "Place Order")))));
+}
+function PayStep({ n, children }) {
+    return React.createElement("div", { style: { display: "flex", gap: 12, alignItems: "flex-start", marginBottom: 14 } },
+        React.createElement("div", { style: { width: 24, height: 24, borderRadius: "50%", background: C.ink, color: C.paper, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, ...fMono } }, n),
+        React.createElement("div", { style: { fontSize: 14 } }, children));
+}
+function CopyRow({ value, onCopy, copied }) {
+    return React.createElement("div", { style: { display: "flex", marginTop: 8 } },
+        React.createElement("div", { style: { ...fMono, fontWeight: 700, fontSize: 15, background: C.paper2, padding: "10px 14px", flex: 1, border: "1px solid " + C.ink, borderRight: "none" } }, value),
+        React.createElement("button", { onClick: onCopy, style: { ...fMono, fontSize: 12, background: C.ink, color: C.paper, border: "1px solid " + C.ink, padding: "0 14px", cursor: "pointer" } }, copied ? Ic.check + " Copied" : Ic.copy + " Copy"));
+}
+function OrderSummaryBox({ cart, total, deliveryCharge, discountAmount, grandTotal }) {
+    return React.createElement("div", { style: { border: "1.5px solid " + C.ink, padding: 16 } },
+        React.createElement("div", { style: { fontWeight: 700, marginBottom: 10 } }, "Order Summary"),
+        cart.map((i) => React.createElement("div", { key: i.id, style: { display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 6 } },
+            React.createElement("span", null,
+                i.name,
+                i.size ? " (" + i.size + ")" : "",
+                " \u00D7 ",
+                i.qty),
+            React.createElement("span", { style: fMono }, money(i.price * i.qty)))),
+        React.createElement("div", { style: { borderTop: "1px solid " + C.ink + "33", marginTop: 10, paddingTop: 10, display: "flex", justifyContent: "space-between", fontSize: 13 } },
+            React.createElement("span", null, "Subtotal"),
+            React.createElement("span", { style: fMono }, money(total))),
+        discountAmount > 0 && React.createElement("div", { style: { display: "flex", justifyContent: "space-between", fontSize: 13, marginTop: 6, color: "#1e7a3a" } },
+            React.createElement("span", null, "Coupon Discount"),
+            React.createElement("span", { style: fMono }, "-" + money(discountAmount))),
+        React.createElement("div", { style: { display: "flex", justifyContent: "space-between", fontSize: 13, marginTop: 6 } },
+            React.createElement("span", null, "Delivery Charge"),
+            React.createElement("span", { style: fMono }, money(deliveryCharge))),
+        React.createElement("div", { style: { display: "flex", justifyContent: "space-between", fontWeight: 700, fontSize: 15, marginTop: 6, ...fMono } },
+            React.createElement("span", null, "Total"),
+            React.createElement("span", null, money(grandTotal))));
+}
+function FieldLabel({ children }) { return React.createElement("div", { style: { ...fMono, fontSize: 11, letterSpacing: "0.06em", textTransform: "uppercase", color: C.khaki, marginBottom: 6, marginTop: 14 } }, children); }
+function TextInput({ value, onChange, placeholder }) { return React.createElement("input", { value: value, onChange: (e) => onChange(e.target.value), placeholder: placeholder, style: inputStyle }); }
+const inputStyle = { width: "100%", padding: "12px 14px", border: "1.5px solid " + C.ink, background: C.white, fontSize: 14, outline: "none", fontFamily: "inherit" };
+/* ================= CONFIRM ================= */
+function Confirm({ order, onDone }) {
+    return React.createElement("div", { style: { maxWidth: 500, margin: "0 auto", padding: "60px 20px", textAlign: "center" } },
+        React.createElement("div", { style: { width: 60, height: 60, borderRadius: "50%", background: C.vibe, color: C.white, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", fontSize: 26 } }, Ic.check),
+        React.createElement("h2", { style: { ...fAnton, fontSize: 26, textTransform: "uppercase" } }, "Order Placed!"),
+        React.createElement("p", { style: { marginTop: 10, fontSize: 14, color: C.khaki } }, "Amra apnar payment verify kore 24 ghontar moddhe confirm korbo."),
+        React.createElement("button", { onClick: onDone, style: { ...primaryBtnStyle, marginTop: 26 } }, "Continue Shopping"));
+}
+/* ================= ADMIN LOGIN ================= */
+function AdminLogin({ onBack, deniedEmail }) {
+    const [email, setEmail] = useState("");
+    const [pass, setPass] = useState("");
+    const [busy, setBusy] = useState(false);
+    const [err, setErr] = useState("");
+    const handleLogin = () => {
+        if (!email || !pass) { setErr("Email ar Password dao"); return; }
+        setBusy(true); setErr("");
+        adminSignIn(email, pass).catch((e) => {
+            const msg = (e.code === "auth/wrong-password" || e.code === "auth/invalid-credential") ? "Email ba Password vul hoyeche."
+                : (e.code === "auth/user-not-found") ? "Ei email diye kono account paoa jayni."
+                : (e.message || "Login failed");
+            setErr(msg);
+        }).finally(() => setBusy(false));
+    };
+    return React.createElement("div", { style: { ...fBody, background: C.paper, minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 20 } },
+        React.createElement("div", { style: { width: "100%", maxWidth: 360, border: "2px solid " + C.ink, padding: 30, background: C.white } },
+            React.createElement("div", { style: { ...fAnton, fontSize: 24, marginBottom: 6 } }, "Admin Login"),
+            React.createElement("div", { style: { ...fMono, fontSize: 12, color: C.khaki, marginBottom: 20 } }, "VIBE ZONE CONTROL PANEL"),
+            deniedEmail && React.createElement("div", { style: { background: "#b02a2a15", border: "1px solid #b02a2a", color: "#b02a2a", padding: 10, fontSize: 12, marginBottom: 16 } },
+                "\u26A0 " + deniedEmail + " admin/staff account na. Onno account diye try koro."),
+            React.createElement(FieldLabel, null, "Email"),
+            React.createElement(TextInput, { value: email, onChange: setEmail, placeholder: "you@example.com" }),
+            React.createElement(FieldLabel, null, "Password"),
+            React.createElement("input", { type: "password", value: pass, onChange: (e) => setPass(e.target.value), onKeyDown: (e) => e.key === "Enter" && handleLogin(), style: inputStyle, placeholder: "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022" }),
+            err && React.createElement("div", { style: { ...fMono, fontSize: 12, color: C.vibeDim, marginTop: 14 } }, err),
+            React.createElement("button", { onClick: handleLogin, disabled: busy, style: { ...primaryBtnStyle, marginTop: 18, opacity: busy ? 0.6 : 1 } }, busy ? "Please wait\u2026" : "Login"),
+            React.createElement("button", { onClick: onBack, style: { ...backBtnStyle, marginTop: 16, justifyContent: "center", width: "100%" } }, "Back to Store")));
+}
+function StaffAddProduct({ catalog, setCatalog, onLogout, showToast }) {
+    const [editing, setEditing] = useState("new");
+    const save = (p) => {
+        const products = [{ ...p, id: uid() }, ...catalog.products];
+        setCatalog({ ...catalog, products });
+        showToast("Product added");
+    };
+    return React.createElement("div", { style: { ...fBody, minHeight: "100vh", background: C.paper2 } },
+        React.createElement("div", { style: { background: C.ink, color: C.paper, padding: "16px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 } },
+            React.createElement("div", { style: { ...fAnton, fontSize: 20 } }, "VIBE ZONE ", React.createElement("span", { style: { color: C.vibe } }, "STAFF")),
+            React.createElement("button", { onClick: onLogout, style: { ...fMono, fontSize: 12, background: C.vibe, border: "1px solid " + C.vibe, color: C.white, padding: "8px 14px", cursor: "pointer" } }, Ic.logout, " Logout")),
+        React.createElement("div", { style: { maxWidth: 700, margin: "0 auto", padding: "24px 20px 80px" } },
+            React.createElement("div", { style: { ...fMono, fontSize: 12, color: C.khaki, marginBottom: 18 } }, "Ei account diye shudhu notun product add kora jay — onno kono tab/data access nei."),
+            React.createElement(ProductForm, { product: null, categories: catalog.categories, onSave: save, onCancel: () => {} })));
+}
+function AdminDashboard({ catalog, orders, setCatalog, setOrders, onExit, onLogout, showToast }) {
+    const [tab, setTab] = useState("dashboard");
+    const tabs = [{ key: "dashboard", label: "Dashboard" }, { key: "orders", label: "Orders" }, { key: "users", label: "Users" }, { key: "products", label: "Products" }, { key: "categories", label: "Categories" }, { key: "coupons", label: "Coupons" }, { key: "slider", label: "Slider" }, { key: "settings", label: "Settings" }];
+    const pendingCount = orders.filter((o) => o.status === "pending").length;
+    return (React.createElement("div", { style: { ...fBody, minHeight: "100vh", background: C.paper2 } },
+        React.createElement("div", { style: { background: C.ink, color: C.paper, padding: "16px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 } },
+            React.createElement("div", { style: { ...fAnton, fontSize: 20 } },
+                "VIBE ZONE ",
+                React.createElement("span", { style: { color: C.vibe } }, "ADMIN")),
+            React.createElement("div", { style: { display: "flex", gap: 10 } },
+                React.createElement("button", { onClick: onExit, style: { ...fMono, fontSize: 12, background: "transparent", border: "1px solid " + C.paper + "66", color: C.paper, padding: "8px 14px", cursor: "pointer" } }, "View Store"),
+                React.createElement("button", { onClick: onLogout, style: { ...fMono, fontSize: 12, background: C.vibe, border: "1px solid " + C.vibe, color: C.white, padding: "8px 14px", cursor: "pointer" } },
+                    Ic.logout,
+                    " Logout"))),
+        React.createElement("div", { style: { maxWidth: 1200, margin: "0 auto", padding: "24px 20px 80px" } },
+            React.createElement("div", { style: { display: "flex", gap: 8, marginBottom: 26, flexWrap: "wrap" } }, tabs.map((t) => (React.createElement("button", { key: t.key, onClick: () => setTab(t.key), style: { ...fMono, fontSize: 12, letterSpacing: "0.05em", display: "flex", alignItems: "center", gap: 8, padding: "10px 16px", border: "1.5px solid " + C.ink, background: tab === t.key ? C.ink : "transparent", color: tab === t.key ? C.paper : C.ink, cursor: "pointer" } },
+                t.label.toUpperCase(),
+                t.key === "orders" && pendingCount > 0 && React.createElement("span", { style: { background: C.vibe, color: C.white, borderRadius: 999, fontSize: 10, padding: "1px 6px" } }, pendingCount))))),
+            tab === "dashboard" && React.createElement(DashboardTab, { catalog: catalog, orders: orders }),
+            tab === "orders" && React.createElement(OrdersTab, { orders: orders, setOrders: setOrders, showToast: showToast }),
+            tab === "users" && React.createElement(UsersTab, null),
+            tab === "products" && React.createElement(ProductsTab, { catalog: catalog, setCatalog: setCatalog, showToast: showToast }),
+            tab === "categories" && React.createElement(CategoriesTab, { catalog: catalog, setCatalog: setCatalog, showToast: showToast }),
+            tab === "coupons" && React.createElement(CouponsTab, { catalog: catalog, setCatalog: setCatalog, showToast: showToast }),
+            tab === "slider" && React.createElement(SliderTab, { catalog: catalog, setCatalog: setCatalog, showToast: showToast }),
+            tab === "settings" && React.createElement(SettingsTab, { catalog: catalog, setCatalog: setCatalog, showToast: showToast }))));
+}
+function UsersTab() {
+    const [users, setUsers] = useState([]);
+    const [appOpens, setAppOpens] = useState(0);
+    const [loaded, setLoaded] = useState(false);
+    useEffect(() => {
+        const unsub = watchUsers((list) => { setUsers(list); setLoaded(true); });
+        const ref = db.ref("stats/appOpens");
+        const cb = (snap) => setAppOpens(snap.val() || 0);
+        ref.on("value", cb);
+        return () => { unsub(); ref.off("value", cb); };
+    }, []);
+
+    const now = Date.now();
+    const DAY = 24 * 60 * 60 * 1000;
+    const newThisWeek = users.filter((u) => u.createdAt && (now - new Date(u.createdAt).getTime()) <= 7 * DAY).length;
+    const newThisMonth = users.filter((u) => u.createdAt && (now - new Date(u.createdAt).getTime()) <= 30 * DAY).length;
+    const returning = users.filter((u) => u.lastLoginAt && u.createdAt && u.lastLoginAt !== u.createdAt).length;
+
+    const StatCard = (label, value, color) => React.createElement("div", { style: { background: C.white, border: "1.5px solid " + C.ink, padding: 18, flex: 1, minWidth: 130 } },
+        React.createElement("div", { style: { ...fMono, fontSize: 11, color: C.khaki, textTransform: "uppercase", marginBottom: 8 } }, label),
+        React.createElement("div", { style: { ...fAnton, fontSize: 24, color: color || C.ink } }, value));
+
+    return React.createElement("div", null,
+        React.createElement("div", { style: { display: "flex", gap: 14, flexWrap: "wrap", marginBottom: 24 } },
+            StatCard("Total App Opens", appOpens),
+            StatCard("Total Accounts", users.length, C.vibe),
+            StatCard("New (7 days)", newThisWeek, "#1e7a3a"),
+            StatCard("New (30 days)", newThisMonth),
+            StatCard("Returning Users", returning)),
+
+        React.createElement("div", { style: { ...fMono, fontSize: 11, color: C.khaki, marginBottom: 14 } }, "Note: Firebase kokhono kono account-er password admin-ke dekhay na \u2014 eta one-way encrypted thake, technically kono jaygay theke read kora jay na (eta Google/Firebase-er security design, amader app-er limitation na)."),
+
+        !loaded && React.createElement(EmptyState, { text: "Loading users\u2026" }),
+        loaded && users.length === 0 && React.createElement(EmptyState, { text: "Ekhono kono customer account create hoyni." }),
+        users.length > 0 && React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 10 } },
+            users.map((u) => React.createElement("div", { key: u.uid, style: { background: C.white, border: "1.5px solid " + C.ink, padding: 14, display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 10 } },
+                React.createElement("div", null,
+                    React.createElement("div", { style: { fontWeight: 700, fontSize: 14 } }, u.name || "(no name)"),
+                    React.createElement("div", { style: { ...fMono, fontSize: 12, color: C.khaki, marginTop: 2 } }, [u.email, u.phone].filter(Boolean).join(" \u00B7 ") || "\u2014"),
+                    React.createElement("div", { style: { ...fMono, fontSize: 10, color: C.khaki, marginTop: 2, textTransform: "uppercase" } }, "via " + (u.provider || "password"))),
+                React.createElement("div", { style: { textAlign: "right" } },
+                    React.createElement("div", { style: { ...fMono, fontSize: 11, color: C.khaki } }, "Joined: " + (u.createdAt ? new Date(u.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "\u2014")),
+                    React.createElement("div", { style: { ...fMono, fontSize: 11, color: C.khaki, marginTop: 2 } }, "Last active: " + (u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "\u2014")))))));
+}
+function DashboardTab({ catalog, orders }) {
+    const revenueStatuses = ["verified", "shipped", "delivered"];
+    const revenueOrders = orders.filter((o) => revenueStatuses.includes(o.status));
+    const totalRevenue = revenueOrders.reduce((s, o) => s + (o.grandTotal || 0), 0);
+    const pendingCount = orders.filter((o) => o.status === "pending").length;
+    const rejectedCount = orders.filter((o) => o.status === "rejected").length;
+    const totalOrders = orders.length;
+
+    const soldMap = {};
+    revenueOrders.forEach((o) => {
+        (o.items || []).forEach((i) => {
+            soldMap[i.name] = (soldMap[i.name] || 0) + i.qty;
+        });
+    });
+    const bestSellers = Object.keys(soldMap).map((name) => ({ name, qty: soldMap[name] })).sort((a, b) => b.qty - a.qty).slice(0, 5);
+
+    const lowStock = catalog.products.filter((p) => (p.stock || 0) <= 3).sort((a, b) => (a.stock || 0) - (b.stock || 0));
+
+    const StatCard = (label, value, color) => React.createElement("div", { style: { background: C.white, border: "1.5px solid " + C.ink, padding: 18, flex: 1, minWidth: 140 } },
+        React.createElement("div", { style: { ...fMono, fontSize: 11, color: C.khaki, textTransform: "uppercase", marginBottom: 8 } }, label),
+        React.createElement("div", { style: { ...fAnton, fontSize: 26, color: color || C.ink } }, value));
+
+    return React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 20 } },
+        React.createElement("div", { style: { display: "flex", gap: 14, flexWrap: "wrap" } },
+            StatCard("Total Orders", totalOrders),
+            StatCard("Total Revenue", money(totalRevenue), C.vibe),
+            StatCard("Pending", pendingCount, C.khaki),
+            StatCard("Rejected", rejectedCount, "#b02a2a")),
+
+        React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))", gap: 20 } },
+            React.createElement("div", { style: { background: C.white, border: "1.5px solid " + C.ink, padding: 20 } },
+                React.createElement("div", { style: { ...fAnton, fontSize: 18, marginBottom: 14 } }, "Best Selling Products"),
+                bestSellers.length === 0 && React.createElement("div", { style: { ...fMono, fontSize: 12, color: C.khaki } }, "Ekhono kono verified order nei."),
+                bestSellers.map((b, i) => React.createElement("div", { key: i, style: { display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: i < bestSellers.length - 1 ? "1px solid " + C.ink + "15" : "none", fontSize: 13 } },
+                    React.createElement("span", null, (i + 1) + ". " + b.name),
+                    React.createElement("span", { style: { ...fMono, fontWeight: 700 } }, b.qty + " sold")))),
+
+            React.createElement("div", { style: { background: C.white, border: "1.5px solid " + C.ink, padding: 20 } },
+                React.createElement("div", { style: { ...fAnton, fontSize: 18, marginBottom: 14 } }, "Low Stock Alert"),
+                lowStock.length === 0 && React.createElement("div", { style: { ...fMono, fontSize: 12, color: C.khaki } }, "Shob product-e thik thak stock ache."),
+                lowStock.map((p) => React.createElement("div", { key: p.id, style: { display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid " + C.ink + "15", fontSize: 13 } },
+                    React.createElement("span", null, p.name),
+                    React.createElement("span", { style: { ...fMono, fontWeight: 700, color: p.stock === 0 ? "#b02a2a" : C.vibeDim } }, p.stock === 0 ? "OUT OF STOCK" : p.stock + " left"))))));
+}
+function orderToCSV(orders) {
+    const headers = ["OrderID", "Date", "Name", "Phone", "District", "Thana", "Area", "Address", "Items", "Subtotal", "Discount", "Delivery", "Total", "Payment Method", "TrxID", "Status", "Tracking Note"];
+    const rows = orders.map((o) => [
+        o.id.slice(-6).toUpperCase(),
+        new Date(o.createdAt).toLocaleString("en-GB"),
+        o.customer.name, o.customer.phone,
+        o.customer.district || "", o.customer.thana || "", o.customer.area || "",
+        o.customer.address,
+        o.items.map((i) => i.name + (i.size ? " (" + i.size + ")" : "") + " x" + i.qty).join("; "),
+        o.subtotal, o.discountAmount || 0, o.deliveryCharge, o.grandTotal,
+        o.paymentMethod, o.paymentInfo.trxId, o.status, o.trackingNote || "",
+    ]);
+    const esc = (v) => '"' + String(v).replace(/"/g, '""') + '"';
+    return [headers.map(esc).join(","), ...rows.map((r) => r.map(esc).join(","))].join("\n");
+}
+function downloadCSV(filename, csvText) {
+    const blob = new Blob(["\uFEFF" + csvText], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+function OrdersTab({ orders, setOrders, showToast }) {
+    const [notes, setNotes] = useState({});
+    const setStatus = (id, status) => { setOrders(id, status); showToast("Order \u2192 " + status); };
+    const getNote = (o) => (notes[o.id] !== undefined ? notes[o.id] : (o.trackingNote || ""));
+    const saveNote = (o) => { updateOrder(o.id, { trackingNote: getNote(o) }); showToast("Tracking note saved"); };
+    if (orders.length === 0)
+        return React.createElement(EmptyState, { text: "Ekhono kono order asheni." });
+    return React.createElement("div", null,
+        React.createElement("button", {
+            onClick: () => downloadCSV("orders.csv", orderToCSV(orders)),
+            style: { ...fMono, fontSize: 12, background: C.ink, color: C.paper, border: "none", padding: "10px 16px", cursor: "pointer", marginBottom: 18 }
+        }, "\u2B07 Export Orders CSV"),
+        React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 14 } }, orders.map((o) => (React.createElement("div", { key: o.id, style: { background: C.white, border: "1.5px solid " + C.ink, padding: 18 } },
+        React.createElement("div", { style: { display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 10 } },
+            React.createElement("div", null,
+                React.createElement("div", { style: { ...fMono, fontSize: 12, color: C.khaki } },
+                    "ORDER #",
+                    o.id.slice(-6).toUpperCase()),
+                React.createElement("div", { style: { fontWeight: 700, fontSize: 15, marginTop: 2 } },
+                    o.customer.name,
+                    " \u00B7 ",
+                    o.customer.phone),
+                React.createElement("div", { style: { fontSize: 13, color: "#555", marginTop: 2 } },
+                    [o.customer.thana, o.customer.district].filter(Boolean).join(", "),
+                    o.customer.area ? " \u2014 " + o.customer.area : "",
+                    " \u2014 ",
+                    o.customer.address,
+                    " (",
+                    o.customer.label,
+                    ")")),
+            React.createElement(StatusPill, { status: o.status })),
+        React.createElement("div", { style: { marginTop: 12, borderTop: "1px solid " + C.ink + "22", paddingTop: 12 } },
+            o.items.map((i) => React.createElement("div", { key: i.id, style: { display: "flex", alignItems: "center", gap: 10, marginBottom: 8 } },
+                i.image && React.createElement("img", { src: i.image, alt: i.name, style: { width: 40, height: 40, objectFit: "cover", border: "1px solid " + C.ink, flexShrink: 0 } }),
+                React.createElement("div", { style: { flex: 1, display: "flex", justifyContent: "space-between", fontSize: 13 } },
+                    React.createElement("span", null,
+                        i.name,
+                        i.size ? " (" + i.size + ")" : "",
+                        " \u00D7 ",
+                        i.qty),
+                    React.createElement("span", { style: fMono }, money(i.price * i.qty))))),
+            o.discountAmount > 0 && React.createElement("div", { style: { display: "flex", justifyContent: "space-between", fontSize: 12, color: "#1e7a3a", marginBottom: 4 } },
+                React.createElement("span", null, "Coupon (" + o.couponCode + ")"),
+                React.createElement("span", { style: fMono }, "-" + money(o.discountAmount))),
+            React.createElement("div", { style: { display: "flex", justifyContent: "space-between", ...fMono, fontWeight: 700, fontSize: 14, marginTop: 8 } },
+                React.createElement("span", null, "Total"),
+                React.createElement("span", null, money(o.grandTotal)))),
+        React.createElement("div", { style: { marginTop: 12, background: C.paper2, padding: 12, fontSize: 13 } },
+            React.createElement("div", { style: { ...fMono, fontSize: 11, color: C.khaki, marginBottom: 6, textTransform: "uppercase" } },
+                o.paymentMethod,
+                " Verification"),
+            "Sender: ",
+            React.createElement("b", null, o.paymentInfo.senderNumber),
+            " \u00B7 Sent: ",
+            React.createElement("b", null, money(o.paymentInfo.amountSent)),
+            " \u00B7 TrxID: ",
+            React.createElement("b", { style: fMono }, o.paymentInfo.trxId)),
+        React.createElement("div", { style: { marginTop: 12 } },
+            React.createElement(FieldLabel, null, "Tracking Note (customer TrackOrder page-e dekhbe)"),
+            React.createElement("div", { style: { display: "flex", gap: 8 } },
+                React.createElement("input", { value: getNote(o), onChange: (e) => setNotes({ ...notes, [o.id]: e.target.value }), placeholder: "Jemon: Rangpur hub e ache, delivery man er kache...", style: { ...inputStyle, flex: 1 } }),
+                React.createElement("button", { onClick: () => saveNote(o), style: { ...fMono, fontSize: 12, background: C.ink, color: C.paper, border: "none", padding: "0 16px", cursor: "pointer" } }, "Save"))),
+        o.status === "pending" && React.createElement("div", { style: { display: "flex", gap: 10, marginTop: 14 } },
+            React.createElement("button", { onClick: () => setStatus(o.id, "verified"), style: { ...fMono, fontSize: 12, background: C.ink, color: C.paper, border: "none", padding: "9px 16px", cursor: "pointer" } }, "\u2713 Verify Payment"),
+            React.createElement("button", { onClick: () => setStatus(o.id, "rejected"), style: { ...fMono, fontSize: 12, background: "transparent", color: C.vibeDim, border: "1.5px solid " + C.vibeDim, padding: "9px 16px", cursor: "pointer" } }, "\u2715 Reject")),
+        o.status === "verified" && React.createElement("div", { style: { display: "flex", gap: 10, marginTop: 14 } },
+            React.createElement("button", { onClick: () => setStatus(o.id, "shipped"), style: { ...fMono, fontSize: 12, background: C.vibe, color: C.white, border: "none", padding: "9px 16px", cursor: "pointer" } }, "Mark Shipped")))))));
+}
+function parseCSV(text) {
+    const rows = [];
+    let row = [], field = "", inQuotes = false;
+    for (let i = 0; i < text.length; i++) {
+        const c = text[i];
+        if (inQuotes) {
+            if (c === '"') { if (text[i + 1] === '"') { field += '"'; i++; } else inQuotes = false; }
+            else field += c;
+        } else {
+            if (c === '"') inQuotes = true;
+            else if (c === ",") { row.push(field); field = ""; }
+            else if (c === "\n" || c === "\r") {
+                if (c === "\r" && text[i + 1] === "\n") i++;
+                row.push(field); field = "";
+                if (row.length > 1 || row[0] !== "") rows.push(row);
+                row = [];
+            } else field += c;
+        }
+    }
+    if (field !== "" || row.length) { row.push(field); rows.push(row); }
+    return rows;
+}
+function csvToProducts(text) {
+    const rows = parseCSV(text);
+    if (rows.length < 2) return [];
+    const headers = rows[0].map((h) => h.trim().toLowerCase());
+    const idx = (name) => headers.indexOf(name);
+    return rows.slice(1).filter((r) => r.length && r[0]).map((r) => ({
+        id: uid(),
+        name: r[idx("name")] || "Untitled Product",
+        category: r[idx("category")] || "",
+        price: Number(r[idx("price")]) || 0,
+        oldPrice: idx("oldprice") >= 0 && r[idx("oldprice")] ? Number(r[idx("oldprice")]) : null,
+        stock: idx("stock") >= 0 ? Number(r[idx("stock")]) || 0 : 0,
+        badge: idx("badge") >= 0 ? r[idx("badge")] : "",
+        sizes: idx("sizes") >= 0 && r[idx("sizes")] ? r[idx("sizes")].split(";").map((s) => s.trim()).filter(Boolean) : [],
+        description: idx("description") >= 0 ? r[idx("description")] : "",
+        images: idx("images") >= 0 && r[idx("images")] ? r[idx("images")].split(";").map((s) => s.trim()).filter(Boolean) : [],
+        image: idx("images") >= 0 && r[idx("images")] ? r[idx("images")].split(";")[0].trim() : "",
+    }));
+}
+function ProductsTab({ catalog, setCatalog, showToast }) {
+    const [editing, setEditing] = useState(null);
+    const fileRef = React.useRef(null);
+    const save = (p) => {
+        let products;
+        if (p.id)
+            products = catalog.products.map((x) => (x.id === p.id ? p : x));
+        else
+            products = [{ ...p, id: uid() }, ...catalog.products];
+        setCatalog({ ...catalog, products });
+        setEditing(null);
+        showToast("Product saved");
+    };
+    const remove = (id) => { setCatalog({ ...catalog, products: catalog.products.filter((p) => p.id !== id) }); showToast("Product deleted"); };
+    const handleBulkFile = (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+            try {
+                const newProducts = csvToProducts(String(reader.result));
+                if (newProducts.length === 0) { showToast("CSV-e kono product paoa jayni"); return; }
+                setCatalog({ ...catalog, products: [...newProducts, ...catalog.products] });
+                showToast(newProducts.length + " ta product add hoyeche");
+            } catch (err) { showToast("CSV porte problem hoyeche"); }
+        };
+        reader.readAsText(file);
+        e.target.value = "";
+    };
+    if (editing)
+        return React.createElement(ProductForm, { product: editing === "new" ? null : editing, categories: catalog.categories, onSave: save, onCancel: () => setEditing(null) });
+    return React.createElement("div", null,
+        React.createElement("div", { style: { display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 10 } },
+            React.createElement("button", { onClick: () => setEditing("new"), style: { ...fMono, fontSize: 12, background: C.ink, color: C.paper, border: "none", padding: "10px 16px", cursor: "pointer" } },
+                Ic.plus, " Add Product"),
+            React.createElement("button", { onClick: () => fileRef.current && fileRef.current.click(), style: { ...fMono, fontSize: 12, background: "transparent", border: "1.5px solid " + C.ink, padding: "10px 16px", cursor: "pointer" } }, "\u2B06 Bulk Upload CSV"),
+            React.createElement("input", { ref: fileRef, type: "file", accept: ".csv", onChange: handleBulkFile, style: { display: "none" } })),
+        React.createElement("div", { style: { ...fMono, fontSize: 11, color: C.khaki, marginBottom: 18 } }, "CSV columns: name, category, price, oldprice, stock, badge, sizes (S;M;L), description, images (url1;url2)"),
+        catalog.products.length === 0 && React.createElement(EmptyState, { text: "Kono product nei. Add Product diye shuru koro." }),
+        React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(220px,1fr))", gap: 14 } }, catalog.products.map((p) => (React.createElement("div", { key: p.id, style: { background: C.white, border: "1.5px solid " + C.ink } },
+            React.createElement("img", { src: primaryImage(p), alt: p.name, style: { width: "100%", aspectRatio: "1/1", objectFit: "cover", borderBottom: "1.5px solid " + C.ink } }),
+            React.createElement("div", { style: { padding: 12 } },
+                React.createElement("div", { style: { ...fMono, fontSize: 10, color: C.khaki, textTransform: "uppercase" } }, p.category),
+                React.createElement("div", { style: { fontWeight: 700, fontSize: 13, marginTop: 2 } }, p.name),
+                React.createElement("div", { style: { ...fMono, fontSize: 13, marginTop: 4 } },
+                    money(p.price),
+                    " \u00B7 Stock: ",
+                    p.stock,
+                    (p.images && p.images.length > 1) ? " \u00B7 " + p.images.length + " photos" : ""),
+                p.sizes && p.sizes.length > 0 && React.createElement("div", { style: { ...fMono, fontSize: 10, color: C.khaki, marginTop: 2 } }, "Sizes: " + p.sizes.join(", ")),
+                React.createElement("div", { style: { display: "flex", gap: 8, marginTop: 10 } },
+                    React.createElement("button", { onClick: () => setEditing(p), style: smallBtnStyle },
+                        Ic.edit,
+                        " Edit"),
+                    React.createElement("button", { onClick: () => remove(p.id), style: { ...smallBtnStyle, color: C.vibeDim, borderColor: C.vibeDim } },
+                        Ic.trash,
+                        " Delete"))))))));
+}
+function ProductForm({ product, categories, onSave, onCancel }) {
+    const initImages = product ? ((product.images && product.images.length ? product.images : (product.image ? [product.image] : []))) : [""];
+    const initSizes = product && product.sizes ? product.sizes.join(", ") : "";
+    const [f, setF] = useState(product
+        ? { ...product, imagesText: initImages.join("\n"), sizesText: initSizes }
+        : { name: "", price: "", oldPrice: "", category: categories[0] ? categories[0].name : "", imagesText: "", badge: "", stock: "", sizesText: "", description: "" });
+    const set = (k, v) => setF({ ...f, [k]: v });
+    const imagePreview = f.imagesText.split("\n").map((s) => s.trim()).filter(Boolean);
+    const doSave = () => {
+        const images = f.imagesText.split("\n").map((s) => s.trim()).filter(Boolean);
+        const sizes = f.sizesText.split(",").map((s) => s.trim()).filter(Boolean);
+        onSave({
+            ...f,
+            price: Number(f.price) || 0,
+            oldPrice: f.oldPrice ? Number(f.oldPrice) : null,
+            stock: Number(f.stock) || 0,
+            images: images,
+            image: images[0] || "",
+            sizes: sizes,
+            description: f.description || "",
+        });
+    };
+    return React.createElement("div", { style: { background: C.white, border: "1.5px solid " + C.ink, padding: 20, maxWidth: 520 } },
+        React.createElement("div", { style: { ...fAnton, fontSize: 20, marginBottom: 16 } },
+            product ? "Edit" : "New",
+            " Product"),
+        React.createElement(FieldLabel, null, "Name"),
+        React.createElement(TextInput, { value: f.name, onChange: (v) => set("name", v), placeholder: "Product name" }),
+        React.createElement(FieldLabel, null, "Category"),
+        React.createElement("select", { value: f.category, onChange: (e) => set("category", e.target.value), style: inputStyle }, categories.map((c) => React.createElement("option", { key: c.id, value: c.name }, c.name))),
+        React.createElement("div", { style: { display: "flex", gap: 14 } },
+            React.createElement("div", { style: { flex: 1 } },
+                React.createElement(FieldLabel, null, "Price (\u09F3)"),
+                React.createElement(TextInput, { value: f.price, onChange: (v) => set("price", v), placeholder: "590" })),
+            React.createElement("div", { style: { flex: 1 } },
+                React.createElement(FieldLabel, null, "Old Price (optional)"),
+                React.createElement(TextInput, { value: f.oldPrice || "", onChange: (v) => set("oldPrice", v), placeholder: "750" }))),
+
+        React.createElement(FieldLabel, null, "Photos \u2014 ekta line-e ekta image URL (first line = main photo)"),
+        React.createElement("textarea", { value: f.imagesText, onChange: (e) => set("imagesText", e.target.value), rows: "4", placeholder: "https://example.com/photo1.jpg\nhttps://example.com/photo2.jpg", style: { ...inputStyle, resize: "vertical", fontFamily: "'Space Mono', monospace", fontSize: 12 } }),
+        imagePreview.length > 0 && React.createElement("div", { style: { display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" } },
+            imagePreview.map((img, i) => React.createElement("img", { key: i, src: img, alt: "", style: { width: 52, height: 52, objectFit: "cover", border: "1.5px solid " + C.ink } }))),
+
+        React.createElement(FieldLabel, null, "Sizes \u2014 comma diye alada koro (blank rakhle size option thakbe na)"),
+        React.createElement(TextInput, { value: f.sizesText, onChange: (v) => set("sizesText", v), placeholder: "M, L, XL, XXL" }),
+
+        React.createElement(FieldLabel, null, "Description"),
+        React.createElement("textarea", { value: f.description || "", onChange: (e) => set("description", e.target.value), rows: "4", placeholder: "Product details, fabric, fit, ...", style: { ...inputStyle, resize: "vertical" } }),
+
+        React.createElement("div", { style: { display: "flex", gap: 14 } },
+            React.createElement("div", { style: { flex: 1 } },
+                React.createElement(FieldLabel, null, "Badge (Hot / New / blank)"),
+                React.createElement(TextInput, { value: f.badge, onChange: (v) => set("badge", v), placeholder: "Hot" })),
+            React.createElement("div", { style: { flex: 1 } },
+                React.createElement(FieldLabel, null, "Stock"),
+                React.createElement(TextInput, { value: f.stock, onChange: (v) => set("stock", v), placeholder: "20" }))),
+
+        React.createElement("div", { style: { display: "flex", gap: 10, marginTop: 20 } },
+            React.createElement("button", { onClick: doSave, style: { ...fMono, fontSize: 12, background: C.ink, color: C.paper, border: "none", padding: "10px 18px", cursor: "pointer" } }, "Save"),
+            React.createElement("button", { onClick: onCancel, style: { ...fMono, fontSize: 12, background: "transparent", border: "1.5px solid " + C.ink, padding: "10px 18px", cursor: "pointer" } }, "Cancel")));
+}
+const smallBtnStyle = { ...fMono, fontSize: 11, display: "flex", alignItems: "center", gap: 5, background: "transparent", border: "1.2px solid " + C.ink, padding: "6px 10px", cursor: "pointer" };
+function CategoriesTab({ catalog, setCatalog, showToast }) {
+    const [editing, setEditing] = useState(null);
+    const save = (c) => {
+        let categories;
+        if (c.id)
+            categories = catalog.categories.map((x) => (x.id === c.id ? c : x));
+        else
+            categories = [...catalog.categories, { ...c, id: uid() }];
+        setCatalog({ ...catalog, categories });
+        setEditing(null);
+        showToast("Category saved");
+    };
+    const remove = (id) => { setCatalog({ ...catalog, categories: catalog.categories.filter((c) => c.id !== id) }); showToast("Category deleted"); };
+    if (editing) {
+        const f = editing === "new" ? { name: "", image: "", showOnHome: true } : editing;
+        return React.createElement("div", { style: { background: C.white, border: "1.5px solid " + C.ink, padding: 20, maxWidth: 440 } },
+            React.createElement("div", { style: { ...fAnton, fontSize: 20, marginBottom: 16 } },
+                editing === "new" ? "New" : "Edit",
+                " Category"),
+            React.createElement(CategoryFormInner, { initial: f, onSave: save, onCancel: () => setEditing(null) }));
+    }
+    return React.createElement("div", null,
+        React.createElement("button", { onClick: () => setEditing("new"), style: { ...fMono, fontSize: 12, background: C.ink, color: C.paper, border: "none", padding: "10px 16px", cursor: "pointer", marginBottom: 18 } },
+            Ic.plus,
+            " Add Category"),
+        React.createElement("div", { style: { ...fMono, fontSize: 11, color: C.khaki, marginBottom: 18 } }, "\"Show on Homepage\" off thakle category-r chip/tile homepage-e dekhabe na, kintu shei category-r product shob shomoy dekha jabe (search/Categories page-e)."),
+        React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(180px,1fr))", gap: 14 } }, catalog.categories.map((c) => (React.createElement("div", { key: c.id, style: { background: C.white, border: "1.5px solid " + C.ink } },
+            React.createElement("div", { style: { position: "relative" } },
+                React.createElement("img", { src: c.image, alt: c.name, style: { width: "100%", aspectRatio: "4/3", objectFit: "cover", borderBottom: "1.5px solid " + C.ink } }),
+                c.showOnHome === false && React.createElement("span", { style: { position: "absolute", top: 6, left: 6, ...fMono, fontSize: 9, padding: "3px 7px", background: C.khaki, color: C.white, textTransform: "uppercase" } }, "Hidden from Home")),
+            React.createElement("div", { style: { padding: 10 } },
+                React.createElement("div", { style: { fontWeight: 700, fontSize: 13 } }, c.name),
+                React.createElement("div", { style: { display: "flex", gap: 8, marginTop: 8 } },
+                    React.createElement("button", { onClick: () => setEditing(c), style: smallBtnStyle },
+                        Ic.edit,
+                        " Edit"),
+                    React.createElement("button", { onClick: () => remove(c.id), style: { ...smallBtnStyle, color: C.vibeDim, borderColor: C.vibeDim } },
+                        Ic.trash,
+                        " Delete"))))))));
+}
+function CategoryFormInner({ initial, onSave, onCancel }) {
+    const [f, setF] = useState({ showOnHome: true, ...initial });
+    return React.createElement("div", null,
+        React.createElement(FieldLabel, null, "Name"),
+        React.createElement(TextInput, { value: f.name, onChange: (v) => setF({ ...f, name: v }), placeholder: "Category name" }),
+        React.createElement(FieldLabel, null, "Image URL"),
+        React.createElement(TextInput, { value: f.image, onChange: (v) => setF({ ...f, image: v }), placeholder: "https://..." }),
+        React.createElement("label", { style: { display: "flex", alignItems: "center", gap: 8, cursor: "pointer", marginTop: 18 } },
+            React.createElement("input", { type: "checkbox", checked: f.showOnHome !== false, onChange: (e) => setF({ ...f, showOnHome: e.target.checked }) }),
+            React.createElement("span", { style: { fontSize: 13, fontWeight: 700 } }, "Show on Homepage")),
+        React.createElement("div", { style: { display: "flex", gap: 10, marginTop: 20 } },
+            React.createElement("button", { onClick: () => onSave(f), style: { ...fMono, fontSize: 12, background: C.ink, color: C.paper, border: "none", padding: "10px 18px", cursor: "pointer" } }, "Save"),
+            React.createElement("button", { onClick: onCancel, style: { ...fMono, fontSize: 12, background: "transparent", border: "1.5px solid " + C.ink, padding: "10px 18px", cursor: "pointer" } }, "Cancel")));
+}
+function CouponsTab({ catalog, setCatalog, showToast }) {
+    const coupons = catalog.coupons || [];
+    const [editing, setEditing] = useState(null);
+    const save = (c) => {
+        let list;
+        if (c.id) list = coupons.map((x) => (x.id === c.id ? c : x));
+        else list = [...coupons, { ...c, id: uid() }];
+        setCatalog({ ...catalog, coupons: list });
+        setEditing(null);
+        showToast("Coupon saved");
+    };
+    const remove = (id) => { setCatalog({ ...catalog, coupons: coupons.filter((c) => c.id !== id) }); showToast("Coupon deleted"); };
+    const toggleActive = (c) => { setCatalog({ ...catalog, coupons: coupons.map((x) => (x.id === c.id ? { ...x, active: !x.active } : x)) }); };
+
+    if (editing) {
+        const f0 = editing === "new" ? { code: "", type: "flat", value: "", active: true } : editing;
+        return React.createElement(CouponForm, { initial: f0, onSave: save, onCancel: () => setEditing(null) });
+    }
+
+    return React.createElement("div", null,
+        React.createElement("button", { onClick: () => setEditing("new"), style: { ...fMono, fontSize: 12, background: C.ink, color: C.paper, border: "none", padding: "10px 16px", cursor: "pointer", marginBottom: 18 } },
+            Ic.plus, " Add Coupon"),
+        coupons.length === 0 && React.createElement(EmptyState, { text: "Kono coupon nei. Add Coupon diye shuru koro." }),
+        React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 10, maxWidth: 500 } },
+            coupons.map((c) => React.createElement("div", { key: c.id, style: { background: C.white, border: "1.5px solid " + C.ink, padding: 14, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 } },
+                React.createElement("div", null,
+                    React.createElement("div", { style: { ...fMono, fontWeight: 700, fontSize: 15 } }, c.code),
+                    React.createElement("div", { style: { ...fMono, fontSize: 12, color: C.khaki, marginTop: 2 } }, c.type === "percent" ? c.value + "% off" : money(c.value) + " off")),
+                React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8 } },
+                    React.createElement("button", { onClick: () => toggleActive(c), style: { ...fMono, fontSize: 11, background: c.active ? "#1e7a3a" : C.khaki, color: C.white, border: "none", padding: "6px 10px", cursor: "pointer" } }, c.active ? "Active" : "Inactive"),
+                    React.createElement("button", { onClick: () => setEditing(c), style: smallBtnStyle }, Ic.edit, " Edit"),
+                    React.createElement("button", { onClick: () => remove(c.id), style: { ...smallBtnStyle, color: C.vibeDim, borderColor: C.vibeDim } }, Ic.trash, " Delete"))))));
+}
+function CouponForm({ initial, onSave, onCancel }) {
+    const [f, setF] = useState(initial);
+    const set = (k, v) => setF({ ...f, [k]: v });
+    return React.createElement("div", { style: { background: C.white, border: "1.5px solid " + C.ink, padding: 20, maxWidth: 440 } },
+        React.createElement("div", { style: { ...fAnton, fontSize: 20, marginBottom: 16 } }, initial.id ? "Edit" : "New", " Coupon"),
+        React.createElement(FieldLabel, null, "Coupon Code"),
+        React.createElement(TextInput, { value: f.code, onChange: (v) => set("code", v.toUpperCase()), placeholder: "WELCOME50" }),
+        React.createElement(FieldLabel, null, "Discount Type"),
+        React.createElement("select", { value: f.type, onChange: (e) => set("type", e.target.value), style: inputStyle },
+            React.createElement("option", { value: "flat" }, "Flat Amount (\u09F3)"),
+            React.createElement("option", { value: "percent" }, "Percentage (%)")),
+        React.createElement(FieldLabel, null, f.type === "percent" ? "Discount Percentage" : "Discount Amount (\u09F3)"),
+        React.createElement(TextInput, { value: f.value, onChange: (v) => set("value", v), placeholder: f.type === "percent" ? "10" : "50" }),
+        React.createElement("div", { style: { display: "flex", gap: 10, marginTop: 20 } },
+            React.createElement("button", { onClick: () => onSave({ ...f, value: Number(f.value) || 0, active: f.active !== false }), style: { ...fMono, fontSize: 12, background: C.ink, color: C.paper, border: "none", padding: "10px 18px", cursor: "pointer" } }, "Save"),
+            React.createElement("button", { onClick: onCancel, style: { ...fMono, fontSize: 12, background: "transparent", border: "1.5px solid " + C.ink, padding: "10px 18px", cursor: "pointer" } }, "Cancel")));
+}
+function SliderTab({ catalog, setCatalog, showToast }) {
+    const slides = catalog.sliders || [];
+    const [editing, setEditing] = useState(null);
+    const save = (s) => {
+        let list;
+        if (s.id) list = slides.map((x) => (x.id === s.id ? s : x));
+        else list = [...slides, { ...s, id: uid() }];
+        setCatalog({ ...catalog, sliders: list });
+        setEditing(null);
+        showToast("Slide saved");
+    };
+    const remove = (id) => { setCatalog({ ...catalog, sliders: slides.filter((s) => s.id !== id) }); showToast("Slide deleted"); };
+    const move = (id, dir) => {
+        const i = slides.findIndex((s) => s.id === id);
+        const j = i + dir;
+        if (j < 0 || j >= slides.length) return;
+        const list = [...slides];
+        const tmp = list[i]; list[i] = list[j]; list[j] = tmp;
+        setCatalog({ ...catalog, sliders: list });
+    };
+
+    if (editing) {
+        const f0 = editing === "new" ? { image: "", title: "" } : editing;
+        return React.createElement(SlideForm, { initial: f0, onSave: save, onCancel: () => setEditing(null) });
+    }
+
+    return React.createElement("div", null,
+        React.createElement("div", { style: { ...fMono, fontSize: 11, color: C.khaki, marginBottom: 14 } }, "Store page-er upore ghure ghure dekhano image slider \u2014 jokhon khushi tokhon jotoi khushi image add koro."),
+        React.createElement("button", { onClick: () => setEditing("new"), style: { ...fMono, fontSize: 12, background: C.ink, color: C.paper, border: "none", padding: "10px 16px", cursor: "pointer", marginBottom: 18 } },
+            Ic.plus, " Add Slide"),
+        slides.length === 0 && React.createElement(EmptyState, { text: "Kono slide nei. Add Slide diye shuru koro." }),
+        React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 10, maxWidth: 560 } },
+            slides.map((s, i) => React.createElement("div", { key: s.id, style: { background: C.white, border: "1.5px solid " + C.ink, padding: 12, display: "flex", gap: 12, alignItems: "center" } },
+                React.createElement("img", { src: s.image, alt: "", style: { width: 90, height: 50, objectFit: "cover", border: "1px solid " + C.ink, flexShrink: 0 } }),
+                React.createElement("div", { style: { flex: 1, minWidth: 0 } },
+                    React.createElement("div", { style: { fontWeight: 700, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, s.title || "(kono title nei)")),
+                React.createElement("div", { style: { display: "flex", gap: 6, flexShrink: 0 } },
+                    React.createElement("button", { onClick: () => move(s.id, -1), disabled: i === 0, style: { ...smallBtnStyle, opacity: i === 0 ? 0.3 : 1 } }, "\u2191"),
+                    React.createElement("button", { onClick: () => move(s.id, 1), disabled: i === slides.length - 1, style: { ...smallBtnStyle, opacity: i === slides.length - 1 ? 0.3 : 1 } }, "\u2193"),
+                    React.createElement("button", { onClick: () => setEditing(s), style: smallBtnStyle }, Ic.edit),
+                    React.createElement("button", { onClick: () => remove(s.id), style: { ...smallBtnStyle, color: C.vibeDim, borderColor: C.vibeDim } }, Ic.trash))))));
+}
+function SlideForm({ initial, onSave, onCancel }) {
+    const [f, setF] = useState(initial);
+    const set = (k, v) => setF({ ...f, [k]: v });
+    return React.createElement("div", { style: { background: C.white, border: "1.5px solid " + C.ink, padding: 20, maxWidth: 460 } },
+        React.createElement("div", { style: { ...fAnton, fontSize: 20, marginBottom: 16 } }, initial.id ? "Edit" : "New", " Slide"),
+        React.createElement(FieldLabel, null, "Image URL"),
+        React.createElement(TextInput, { value: f.image, onChange: (v) => set("image", v), placeholder: "https://..." }),
+        f.image && React.createElement("img", { src: f.image, alt: "", style: { width: "100%", aspectRatio: "16/7", objectFit: "cover", border: "1.5px solid " + C.ink, marginTop: 10 } }),
+        React.createElement(FieldLabel, null, "Title Text (optional, image-er upore dekhabe)"),
+        React.createElement(TextInput, { value: f.title, onChange: (v) => set("title", v), placeholder: "New Drop \u2014 Oversized Fit" }),
+        React.createElement("div", { style: { display: "flex", gap: 10, marginTop: 20 } },
+            React.createElement("button", { onClick: () => onSave(f), style: { ...fMono, fontSize: 12, background: C.ink, color: C.paper, border: "none", padding: "10px 18px", cursor: "pointer" } }, "Save"),
+            React.createElement("button", { onClick: onCancel, style: { ...fMono, fontSize: 12, background: "transparent", border: "1.5px solid " + C.ink, padding: "10px 18px", cursor: "pointer" } }, "Cancel")));
+}
+function SettingsTab({ catalog, setCatalog, showToast }) {
+    const [f, setF] = useState({
+        ...catalog,
+        contact: { email: "", phone: "", address: "", facebook: "", instagram: "", ...(catalog.contact || {}) },
+        pages: { about: "", privacy: "", terms: "", returns: "", ...(catalog.pages || {}) },
+        emailjs: { serviceId: "", templateId: "", publicKey: "", adminEmail: "", ...(catalog.emailjs || {}) },
+        popup: { enabled: false, image: "", link: "", ...(catalog.popup || {}) },
+    });
+    const set = (k, v) => setF({ ...f, [k]: v });
+    const setPayNum = (k, v) => setF({ ...f, paymentNumbers: { ...f.paymentNumbers, [k]: v } });
+    const setContact = (k, v) => setF({ ...f, contact: { ...f.contact, [k]: v } });
+    const setPage = (k, v) => setF({ ...f, pages: { ...f.pages, [k]: v } });
+    const setEmailjs = (k, v) => setF({ ...f, emailjs: { ...f.emailjs, [k]: v } });
+    const setPopup = (k, v) => setF({ ...f, popup: { ...f.popup, [k]: v } });
+    return React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 20, maxWidth: 560 } },
+        React.createElement("div", { style: { background: C.white, border: "1.5px solid " + C.ink, padding: 20 } },
+            React.createElement("div", { style: { ...fAnton, fontSize: 18, marginBottom: 12 } }, "General"),
+            React.createElement(FieldLabel, null, "Shop Name"),
+            React.createElement(TextInput, { value: f.shopName, onChange: (v) => set("shopName", v) }),
+            React.createElement(FieldLabel, null, "Tagline"),
+            React.createElement(TextInput, { value: f.tagline, onChange: (v) => set("tagline", v) }),
+            React.createElement(FieldLabel, null, "Logo Image URL (blank = text logo)"),
+            React.createElement(TextInput, { value: f.logo || "", onChange: (v) => set("logo", v), placeholder: "https://..." }),
+            React.createElement(FieldLabel, null, "Delivery Charge (\u09F3)"),
+            React.createElement(TextInput, { value: f.deliveryCharge, onChange: (v) => set("deliveryCharge", Number(v) || 0) }),
+            React.createElement(FieldLabel, null, "App Download URL (.apk link, landing page-e use hobe)"),
+            React.createElement(TextInput, { value: f.apkUrl || "", onChange: (v) => set("apkUrl", v), placeholder: "https://yoursite.com/vibezone.apk" })),
+
+        React.createElement("div", { style: { background: C.white, border: "1.5px solid " + C.ink, padding: 20 } },
+            React.createElement("div", { style: { ...fAnton, fontSize: 18, marginBottom: 12 } }, "Payment Numbers"),
+            React.createElement(FieldLabel, null, "bKash Number"),
+            React.createElement(TextInput, { value: f.paymentNumbers.bkash, onChange: (v) => setPayNum("bkash", v) }),
+            React.createElement(FieldLabel, null, "Nagad Number"),
+            React.createElement(TextInput, { value: f.paymentNumbers.nagad, onChange: (v) => setPayNum("nagad", v) }),
+            React.createElement(FieldLabel, null, "Rocket Number"),
+            React.createElement(TextInput, { value: f.paymentNumbers.rocket, onChange: (v) => setPayNum("rocket", v) })),
+
+        React.createElement("div", { style: { background: C.white, border: "1.5px solid " + C.ink, padding: 20 } },
+            React.createElement("div", { style: { ...fAnton, fontSize: 18, marginBottom: 12 } }, "Contact Info"),
+            React.createElement(FieldLabel, null, "Email"),
+            React.createElement(TextInput, { value: f.contact.email, onChange: (v) => setContact("email", v) }),
+            React.createElement(FieldLabel, null, "Phone"),
+            React.createElement(TextInput, { value: f.contact.phone, onChange: (v) => setContact("phone", v) }),
+            React.createElement(FieldLabel, null, "Address"),
+            React.createElement(TextInput, { value: f.contact.address, onChange: (v) => setContact("address", v) }),
+            React.createElement(FieldLabel, null, "Facebook URL"),
+            React.createElement(TextInput, { value: f.contact.facebook, onChange: (v) => setContact("facebook", v), placeholder: "https://facebook.com/..." }),
+            React.createElement(FieldLabel, null, "Instagram URL"),
+            React.createElement(TextInput, { value: f.contact.instagram, onChange: (v) => setContact("instagram", v), placeholder: "https://instagram.com/..." })),
+
+        React.createElement("div", { style: { background: C.white, border: "1.5px solid " + C.ink, padding: 20 } },
+            React.createElement("div", { style: { ...fAnton, fontSize: 18, marginBottom: 4 } }, "Pages"),
+            React.createElement("div", { style: { ...fMono, fontSize: 11, color: C.khaki, marginBottom: 12 } }, "Ei text-gulo customer footer theke dekhte parbe"),
+            Object.keys(PAGE_TITLES).map((k) => React.createElement("div", { key: k },
+                React.createElement(FieldLabel, null, PAGE_TITLES[k]),
+                React.createElement("textarea", { value: f.pages[k], onChange: (e) => setPage(k, e.target.value), rows: "4", style: { ...inputStyle, resize: "vertical" } })))),
+
+        React.createElement("div", { style: { background: C.white, border: "1.5px solid " + C.ink, padding: 20 } },
+            React.createElement("div", { style: { ...fAnton, fontSize: 18, marginBottom: 4 } }, "Order Email Notifications (Free \u2014 EmailJS)"),
+            React.createElement("div", { style: { ...fMono, fontSize: 11, color: C.khaki, marginBottom: 12, lineHeight: 1.6 } },
+                "emailjs.com-e free account banao \u2192 Email Service + Template create koro \u2192 nicher 3ta value bosao. Admin Email dile tumi nijeo notun order-er email pabe."),
+            React.createElement(FieldLabel, null, "Service ID"),
+            React.createElement(TextInput, { value: f.emailjs.serviceId, onChange: (v) => setEmailjs("serviceId", v), placeholder: "service_xxxxxxx" }),
+            React.createElement(FieldLabel, null, "Template ID"),
+            React.createElement(TextInput, { value: f.emailjs.templateId, onChange: (v) => setEmailjs("templateId", v), placeholder: "template_xxxxxxx" }),
+            React.createElement(FieldLabel, null, "Public Key"),
+            React.createElement(TextInput, { value: f.emailjs.publicKey, onChange: (v) => setEmailjs("publicKey", v), placeholder: "xxxxxxxxxxxxxxxx" }),
+            React.createElement(FieldLabel, null, "Admin Notification Email (tumi nijer email pete chao)"),
+            React.createElement(TextInput, { value: f.emailjs.adminEmail, onChange: (v) => setEmailjs("adminEmail", v), placeholder: "you@example.com" })),
+
+        React.createElement("div", { style: { background: C.white, border: "1.5px solid " + C.ink, padding: 20 } },
+            React.createElement("div", { style: { ...fAnton, fontSize: 18, marginBottom: 4 } }, "App Open Popup"),
+            React.createElement("div", { style: { ...fMono, fontSize: 11, color: C.khaki, marginBottom: 12 } }, "App/website khulle customer-ke ekbar ei poster dekhabe, X-e click kore bondho korte parbe."),
+            React.createElement("label", { style: { display: "flex", alignItems: "center", gap: 8, cursor: "pointer", marginBottom: 14 } },
+                React.createElement("input", { type: "checkbox", checked: f.popup.enabled, onChange: (e) => setPopup("enabled", e.target.checked) }),
+                React.createElement("span", { style: { fontSize: 13, fontWeight: 700 } }, "Popup Enable Koro")),
+            React.createElement(FieldLabel, null, "Poster Image URL"),
+            React.createElement(TextInput, { value: f.popup.image, onChange: (v) => setPopup("image", v), placeholder: "https://..." }),
+            f.popup.image && React.createElement("img", { src: f.popup.image, alt: "", style: { width: "100%", maxWidth: 260, marginTop: 10, border: "1.5px solid " + C.ink, borderRadius: 8 } }),
+            React.createElement(FieldLabel, null, "Link (optional \u2014 poster-e click korle kothay jabe)"),
+            React.createElement(TextInput, { value: f.popup.link, onChange: (v) => setPopup("link", v), placeholder: "https://... (blank rakha jay)" })),
+
+        React.createElement("button", { onClick: () => { setCatalog(f); showToast("Settings saved"); }, style: { ...fMono, fontSize: 12, background: C.ink, color: C.paper, border: "none", padding: "12px 20px", cursor: "pointer" } }, "Save All Settings"));
+}
+function EmptyState({ text }) { return React.createElement("div", { style: { ...fMono, fontSize: 13, color: C.khaki, padding: "30px 0" } }, text); }
+function StatusPill({ status }) {
+    const map = { pending: [C.khaki, "Pending"], verified: [C.vibe, "Verified"], rejected: ["#b02a2a", "Rejected"], shipped: ["#1e7a3a", "Shipped"] };
+    const pair = map[status] || map.pending;
+    return React.createElement("span", { style: { ...fMono, fontSize: 11, color: "#fff", background: pair[0], padding: "5px 12px", borderRadius: 999, height: "fit-content", textTransform: "uppercase" } }, pair[1]);
+}
+const PAGE_TITLES = { about: "About Us", privacy: "Privacy Policy", terms: "Terms & Conditions", returns: "Return & Cancellation Policy" };
+
+function PageView({ title, content, onBack }) {
+    return React.createElement("div", { style: { maxWidth: 700, margin: "0 auto", padding: "30px 20px 80px" } },
+        React.createElement("button", { onClick: onBack, style: backBtnStyle }, Ic.back, " Back to Store"),
+        React.createElement("h2", { style: { ...fAnton, fontSize: 28, textTransform: "uppercase", margin: "18px 0 20px" } }, title),
+        React.createElement("div", { style: { fontSize: 14, lineHeight: 1.8, whiteSpace: "pre-wrap", color: "#333" } }, content || "Content shigroi update kora hobe."));
+}
+
+function toWaNumber(phone) {
+    if (!phone) return "";
+    let digits = String(phone).replace(/[^0-9]/g, "");
+    if (digits.startsWith("880")) return digits;
+    if (digits.startsWith("0")) return "880" + digits.slice(1);
+    return digits;
+}
+function WhatsAppButton({ phone, shopName }) {
+    const num = toWaNumber(phone);
+    if (!num) return null;
+    const msg = encodeURIComponent("Hi " + (shopName || "") + ", আমি আপনাদের \u201cVIBE ZONE\u201d App থেকে এসেছি। আমি আপনাদের প্রোডাক্ট নিয়ে জানতে চাই।");
+    return React.createElement("a", {
+        href: "https://wa.me/" + num + "?text=" + msg,
+        target: "_blank", rel: "noopener noreferrer", title: "Chat on WhatsApp",
+        style: {
+            position: "fixed", bottom: 20, right: 20, zIndex: 80,
+            width: 54, height: 54, borderRadius: "50%", background: "#25D366",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            boxShadow: "0 4px 14px rgba(0,0,0,0.3)", border: "2px solid " + C.ink,
+        }
+    }, React.createElement("svg", { viewBox: "0 0 32 32", width: 28, height: 28, fill: "#fff" },
+        React.createElement("path", { d: "M16.001 3.2c-7.06 0-12.8 5.74-12.8 12.8 0 2.26.6 4.44 1.73 6.37L3.2 28.8l6.6-1.7a12.75 12.75 0 0 0 6.2 1.58h.01c7.06 0 12.8-5.74 12.8-12.8s-5.74-12.68-12.81-12.68zm0 23.36h-.01a10.6 10.6 0 0 1-5.4-1.48l-.39-.23-4 1.03 1.06-3.9-.25-.4a10.55 10.55 0 0 1-1.6-5.58c0-5.85 4.76-10.6 10.6-10.6 2.83 0 5.49 1.1 7.49 3.11a10.53 10.53 0 0 1 3.1 7.5c0 5.85-4.76 10.55-10.6 10.55zm5.8-7.9c-.32-.16-1.88-.93-2.17-1.03-.29-.11-.5-.16-.72.16-.21.32-.82 1.03-1 1.24-.19.21-.37.24-.69.08-.32-.16-1.34-.5-2.55-1.58-.94-.84-1.58-1.87-1.76-2.19-.19-.32-.02-.48.14-.64.14-.14.32-.37.48-.55.16-.19.21-.32.32-.53.11-.21.05-.4-.03-.56-.08-.16-.72-1.74-.99-2.38-.26-.63-.53-.54-.72-.55h-.61c-.21 0-.56.08-.85.4-.29.32-1.11 1.08-1.11 2.64s1.14 3.06 1.3 3.27c.16.21 2.24 3.42 5.42 4.8.76.33 1.35.52 1.81.67.76.24 1.45.21 2 .13.61-.09 1.88-.77 2.14-1.51.27-.74.27-1.38.19-1.51-.08-.14-.29-.21-.61-.37z" }))
+    );
+}
+function SiteFooter({ catalog, onOpenPage }) {
+    const c = catalog.contact || {};
+    return React.createElement("footer", { style: { background: C.ink, color: C.paper, padding: "48px 20px 20px", marginTop: 40 } },
+        React.createElement("div", { style: { maxWidth: 1200, margin: "0 auto" } },
+            React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 30, paddingBottom: 30, borderBottom: "1px solid #ffffff22" } },
+                React.createElement("div", null,
+                    React.createElement("div", { style: { ...fAnton, fontSize: 20, marginBottom: 10 } }, catalog.shopName),
+                    React.createElement("div", { style: { ...fBody, fontSize: 13, color: "#ffffffaa", lineHeight: 1.6 } }, catalog.tagline)),
+                React.createElement("div", null,
+                    React.createElement("div", { style: { ...fMono, fontSize: 11, color: C.vibe, marginBottom: 10, textTransform: "uppercase" } }, "Policies"),
+                    React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 8 } },
+                        Object.keys(PAGE_TITLES).map((k) => React.createElement("span", { key: k, onClick: () => onOpenPage(k), style: { ...fBody, fontSize: 13, color: "#ffffffcc", cursor: "pointer" } }, PAGE_TITLES[k])))),
+                React.createElement("div", null,
+                    React.createElement("div", { style: { ...fMono, fontSize: 11, color: C.vibe, marginBottom: 10, textTransform: "uppercase" } }, "Contact"),
+                    React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 8, fontSize: 13, color: "#ffffffcc" } },
+                        c.email && React.createElement("a", { href: "mailto:" + c.email, style: { color: "#ffffffcc" } }, c.email),
+                        c.phone && React.createElement("a", { href: "tel:" + c.phone, style: { color: "#ffffffcc" } }, c.phone),
+                        c.address && React.createElement("span", null, c.address))),
+                (c.facebook || c.instagram) && React.createElement("div", null,
+                    React.createElement("div", { style: { ...fMono, fontSize: 11, color: C.vibe, marginBottom: 10, textTransform: "uppercase" } }, "Follow"),
+                    React.createElement("div", { style: { display: "flex", gap: 12 } },
+                        c.facebook && React.createElement("a", { href: c.facebook, target: "_blank", style: { color: "#ffffffcc", fontSize: 13 } }, "Facebook"),
+                        c.instagram && React.createElement("a", { href: c.instagram, target: "_blank", style: { color: "#ffffffcc", fontSize: 13 } }, "Instagram")))),
+            React.createElement("div", { style: { textAlign: "center", ...fMono, fontSize: 12, color: "#ffffff99", paddingTop: 20 } },
+                "\u00A9 2026 ", catalog.shopName, " \u2014 All rights reserved")));
+}
+ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App, null));
+
+</script>
+
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("service-worker.js").catch((err) => console.error("SW register failed:", err));
+    });
+  }
+</script>
+</body>
+</html>
