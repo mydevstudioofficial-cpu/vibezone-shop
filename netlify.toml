@@ -1,0 +1,4 @@
+[[redirects]]
+  from = "/product/*"
+  to = "/.netlify/functions/product/:splat"
+  status = 200
