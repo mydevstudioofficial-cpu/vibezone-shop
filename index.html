@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="bn">
 <head>
@@ -277,6 +276,22 @@ function watchUsers(cb, onErr) {
 function pingAppOpen() {
     try { db.ref("stats/appOpens").transaction((cur) => (cur || 0) + 1); } catch (e) {}
 }
+function watchReviews(productId, cb, onErr) {
+    const ref = db.ref("reviews/" + productId);
+    ref.on("value", (snap) => {
+        const val = snap.val() || {};
+        const list = Object.keys(val).map((id) => ({ ...val[id], id })).sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+        cb(list);
+    }, (err) => { console.error(err); onErr && onErr(err); });
+    return () => ref.off();
+}
+function submitReview(productId, review) {
+    const ref = db.ref("reviews/" + productId).push();
+    return ref.set(review);
+}
+function deleteReview(productId, reviewId) {
+    return db.ref("reviews/" + productId + "/" + reviewId).remove();
+}
 function sendOrderEmails(order, catalog) {
     const cfg = catalog.emailjs || {};
     if (!cfg.serviceId || !cfg.templateId || !cfg.publicKey || typeof emailjs === "undefined") return;
@@ -517,7 +532,7 @@ function App() {
             React.createElement(TopHeader, { shopName: catalog.shopName, logo: catalog.logo, cartCount: cartCount, query: query, setQuery: setQuery, onCart: () => setView("cart"), onAdmin: () => setView(adminRole ? "admin" : "admin-login"), onHome: () => { setView("store"); setPageKey(null); }, onTrack: () => setView("track"), onOpenPage: (k) => { setPageKey(k); setView("page"); }, onAccount: () => setView("account"), currentUser: currentUser }),
         view === "store" && React.createElement(Store, { catalog: catalog, activeCat: activeCat, setActiveCat: setActiveCat, products: filteredProducts, onAdd: addToCart, onView: viewProduct, onOpenCategories: () => setView("categories") }),
         view === "categories" && React.createElement(CategoriesPage, { catalog: catalog, onOpenCategory: (name) => { setActiveCat(name); setView("store"); }, onBack: () => setView("store") }),
-        view === "product" && selectedProductId && React.createElement(ProductDetail, { product: catalog.products.find((p) => p.id === selectedProductId), allProducts: catalog.products, onBack: () => setView("store"), onAdd: addToCart, onGoCart: () => setView("cart"), onGoCheckout: () => setView("checkout"), onOpenProduct: viewProduct }),
+        view === "product" && selectedProductId && React.createElement(ProductDetail, { product: catalog.products.find((p) => p.id === selectedProductId), allProducts: catalog.products, currentUser: currentUser, onBack: () => setView("store"), onAdd: addToCart, onGoCart: () => setView("cart"), onGoCheckout: () => setView("checkout"), onOpenProduct: viewProduct, onOpenAccount: () => setView("account") }),
         view === "track" && React.createElement(TrackOrder, { orders: orders, onBack: () => setView("store") }),
         view === "account" && React.createElement(AccountView, { currentUser: currentUser, orders: orders, onBack: () => setView("store") }),
         view === "page" && pageKey && React.createElement(PageView, { title: PAGE_TITLES[pageKey], content: (catalog.pages || {})[pageKey], onBack: () => setView("store") }),
@@ -684,7 +699,72 @@ function ProductCard({ p, onAdd, onOpen }) {
                 React.createElement("button", { onClick: quickAdd, title: hasSizes ? "Select size" : "Quick add", style: { width: 24, height: 24, flexShrink: 0, border: "1.5px solid " + C.ink, background: "transparent", cursor: "pointer", fontSize: 13 } }, Ic.plus)))));
 }
 /* ================= PRODUCT DETAIL ================= */
-function ProductDetail({ product, allProducts, onBack, onAdd, onGoCart, onGoCheckout, onOpenProduct }) {
+function StarRating({ value, onChange, size }) {
+    const s = size || 16;
+    const interactive = !!onChange;
+    return React.createElement("div", { style: { display: "inline-flex", gap: 2 } },
+        [1, 2, 3, 4, 5].map((n) => React.createElement("span", {
+            key: n,
+            onClick: interactive ? () => onChange(n) : undefined,
+            style: { fontSize: s, lineHeight: 1, color: n <= Math.round(value) ? C.vibe : C.ink + "33", cursor: interactive ? "pointer" : "default" }
+        }, "\u2605")));
+}
+function ReviewsSection({ productId, currentUser, onOpenAccount }) {
+    const [reviews, setReviews] = useState([]);
+    const [loaded, setLoaded] = useState(false);
+    const [rating, setRating] = useState(0);
+    const [comment, setComment] = useState("");
+    const [busy, setBusy] = useState(false);
+    const [msg, setMsg] = useState("");
+    useEffect(() => {
+        const unsub = watchReviews(productId, (list) => { setReviews(list); setLoaded(true); });
+        return unsub;
+    }, [productId]);
+    const avg = reviews.length ? reviews.reduce((s, r) => s + (r.rating || 0), 0) / reviews.length : 0;
+    const myReview = currentUser ? reviews.find((r) => r.uid === currentUser.uid) : null;
+    const handleSubmit = () => {
+        if (!rating) { setMsg("Age star select koro"); return; }
+        setBusy(true); setMsg("");
+        submitReview(productId, {
+            uid: currentUser.uid,
+            name: currentUser.displayName || "Customer",
+            rating: rating,
+            comment: comment.trim(),
+            createdAt: new Date().toISOString(),
+        }).then(() => { setRating(0); setComment(""); setMsg("Review post hoyeche, dhonnobad!"); }).catch(() => setMsg("Kichu vul hoyeche, abar try koro।")).finally(() => setBusy(false));
+    };
+    return React.createElement("div", { style: { marginTop: 26, paddingTop: 20, borderTop: "1px solid " + C.ink + "22" } },
+        React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, marginBottom: 16 } },
+            React.createElement("div", { style: { ...fAnton, fontSize: 18, textTransform: "uppercase" } }, "Reviews"),
+            reviews.length > 0 && React.createElement(React.Fragment, null,
+                React.createElement(StarRating, { value: avg }),
+                React.createElement("span", { style: { ...fMono, fontSize: 12, color: C.khaki } }, avg.toFixed(1) + " (" + reviews.length + ")"))),
+
+        !myReview && React.createElement("div", { style: { border: "1.5px solid " + C.ink, padding: 16, marginBottom: 20, background: C.paper2 } },
+            currentUser
+                ? React.createElement(React.Fragment, null,
+                    React.createElement(FieldLabel, null, "Apnar Rating"),
+                    React.createElement(StarRating, { value: rating, onChange: setRating, size: 24 }),
+                    React.createElement(FieldLabel, null, "Comment (optional)"),
+                    React.createElement("textarea", { value: comment, onChange: (e) => setComment(e.target.value), rows: "3", placeholder: "Product niye apnar experience likhun...", style: { ...inputStyle, resize: "vertical" } }),
+                    React.createElement("button", { onClick: handleSubmit, disabled: busy, style: { ...fMono, fontSize: 12, background: C.ink, color: C.paper, border: "none", padding: "10px 18px", cursor: "pointer", marginTop: 12, opacity: busy ? 0.6 : 1 } }, busy ? "Posting\u2026" : "Submit Review"),
+                    msg && React.createElement("div", { style: { ...fMono, fontSize: 11, color: C.vibeDim, marginTop: 8 } }, msg))
+                : React.createElement("div", { style: { fontSize: 13, color: "#444" } },
+                    "Review likhte hole ",
+                    React.createElement("span", { onClick: onOpenAccount, style: { color: C.vibeDim, fontWeight: 700, cursor: "pointer", textDecoration: "underline" } }, "Login"),
+                    " korun।")),
+
+        !loaded && React.createElement("div", { style: { ...fMono, fontSize: 12, color: C.khaki } }, "Loading reviews\u2026"),
+        loaded && reviews.length === 0 && React.createElement("div", { style: { ...fMono, fontSize: 12, color: C.khaki } }, "Ekhono kono review nei \u2014 prothom review-tা tomar hote pare!"),
+        reviews.length > 0 && React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 14 } },
+            reviews.map((r) => React.createElement("div", { key: r.id, style: { borderBottom: "1px solid " + C.ink + "18", paddingBottom: 14 } },
+                React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between" } },
+                    React.createElement("div", { style: { fontWeight: 700, fontSize: 13 } }, r.name),
+                    React.createElement(StarRating, { value: r.rating })),
+                React.createElement("div", { style: { ...fMono, fontSize: 10, color: C.khaki, marginTop: 2 } }, r.createdAt ? new Date(r.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : ""),
+                r.comment && React.createElement("p", { style: { fontSize: 13, color: "#444", marginTop: 6, lineHeight: 1.6 } }, r.comment)))));
+}
+function ProductDetail({ product, allProducts, currentUser, onBack, onAdd, onGoCart, onGoCheckout, onOpenProduct, onOpenAccount }) {
     const images = (product && product.images && product.images.length) ? product.images : [primaryImage(product)];
     const [activeImg, setActiveImg] = useState(0);
     const [size, setSize] = useState("");
@@ -794,6 +874,8 @@ function ProductDetail({ product, allProducts, onBack, onAdd, onGoCart, onGoChec
                 product.description && React.createElement("div", { style: { marginTop: 26, paddingTop: 20, borderTop: "1px solid " + C.ink + "22" } },
                     React.createElement("div", { style: { ...fMono, fontSize: 11, color: C.khaki, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 } }, "Description"),
                     React.createElement("p", { style: { fontSize: 14, lineHeight: 1.7, color: "#444" } }, product.description)))),
+
+        React.createElement(ReviewsSection, { productId: product.id, currentUser: currentUser, onOpenAccount: onOpenAccount }),
 
         related.length > 0 && React.createElement("div", { style: { marginTop: 50 } },
             React.createElement("div", { style: { ...fAnton, fontSize: 20, textTransform: "uppercase", marginBottom: 16 } }, "You May Also Like"),
