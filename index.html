@@ -622,9 +622,13 @@ const iconBtnStyle = { width: 36, height: 36, borderRadius: "50%", border: "1.5p
 /* ================= STORE ================= */
 function Store({ catalog, activeCat, setActiveCat, products, onAdd, onView, onOpenCategories }) {
     const homeCats = catalog.categories.filter((c) => c.showOnHome !== false);
+    const PAGE_SIZE = 16;
+    const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+    useEffect(() => { setVisibleCount(PAGE_SIZE); }, [activeCat]);
+    const visibleProducts = products.slice(0, visibleCount);
     return (React.createElement("div", { style: { maxWidth: 1200, margin: "0 auto", padding: "0 20px" } },
         React.createElement("div", { style: { padding: "44px 0 8px" } },
-            React.createElement("div", { style: { ...fMono, fontSize: 11, color: C.vibeDim, letterSpacing: "0.14em" } }, " \u2192 EVERY DISTRICT, BD"),
+            React.createElement("div", { style: { ...fMono, fontSize: 11, color: C.vibeDim, letterSpacing: "0.14em" } }, "THAKURGAON \u2192 EVERY DISTRICT, BD"),
             React.createElement("h1", { style: { ...fAnton, fontSize: "clamp(32px,6vw,56px)", lineHeight: 1, textTransform: "uppercase", marginTop: 10 } }, catalog.tagline)),
         catalog.sliders && catalog.sliders.length > 0 && React.createElement(HeroSlider, { slides: catalog.sliders }),
         React.createElement("div", { style: { display: "flex", gap: 10, overflowX: "auto", padding: "22px 0", alignItems: "center" } },
@@ -633,7 +637,12 @@ function Store({ catalog, activeCat, setActiveCat, products, onAdd, onView, onOp
             React.createElement("button", { onClick: onOpenCategories, style: { ...fMono, fontSize: 12, letterSpacing: "0.06em", whiteSpace: "nowrap", padding: "10px 16px", border: "1.5px dashed " + C.vibeDim, color: C.vibeDim, background: "transparent", cursor: "pointer" } }, "All Categories \u2192")),
         React.createElement("div", { className: "vz-grid" },
             products.length === 0 && React.createElement("div", { style: { ...fMono, fontSize: 13, color: C.khaki, padding: "40px 0", gridColumn: "1 / -1" } }, "No products found in this category."),
-            products.map((p) => React.createElement(ProductCard, { key: p.id, p: p, onAdd: onAdd, onOpen: () => onView(p) })))));
+            visibleProducts.map((p) => React.createElement(ProductCard, { key: p.id, p: p, onAdd: onAdd, onOpen: () => onView(p) }))),
+        products.length > visibleCount && React.createElement("div", { style: { textAlign: "center", padding: "10px 0 50px" } },
+            React.createElement("button", {
+                onClick: () => setVisibleCount((n) => n + PAGE_SIZE),
+                style: { ...fMono, fontSize: 12, letterSpacing: "0.06em", textTransform: "uppercase", padding: "13px 32px", border: "1.5px solid " + C.ink, background: "transparent", color: C.ink, cursor: "pointer" }
+            }, "Load More (" + (products.length - visibleCount) + " more)"))));
 }
 function CategoriesPage({ catalog, onOpenCategory, onBack }) {
     const countFor = (name) => catalog.products.filter((p) => p.category === name).length;
