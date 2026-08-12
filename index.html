@@ -53,6 +53,9 @@
   @keyframes vzLoad{from{width:0%;}to{width:100%;}}
   @keyframes vzSignal{0%,100%{transform:scale(1); opacity:.6;}50%{transform:scale(1.15); opacity:1;}}
   .vz-wifi{animation:vzSignal 1.5s infinite; display:inline-block;}
+  @keyframes vzSweep{0%{top:0; opacity:0;}10%{opacity:1;}50%{top:100%; opacity:1;}60%{opacity:0;}100%{top:0; opacity:0;}}
+  .vz-scanline{animation:vzSweep 1.8s ease-in-out infinite;}
+  @media (prefers-reduced-motion: reduce){ .vz-scanline{animation:none; top:50%; opacity:0.6;} }
 </style>
 </head>
 <body>
@@ -497,19 +500,44 @@ function App() {
         if (view === "admin-login" && adminRole) setView("admin");
     }, [view, adminRole]);
     if (isOffline) {
-        return React.createElement("div", { style: { minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(135deg,#ff7a00,#ff4d00)", fontFamily: "'Segoe UI',sans-serif", padding: 20 } },
-            React.createElement("div", { style: { width: "90%", maxWidth: 380, padding: "35px 25px", textAlign: "center", background: "rgba(255,255,255,0.15)", backdropFilter: "blur(15px)", borderRadius: 30, border: "1px solid rgba(255,255,255,0.3)", color: "#fff", boxShadow: "0 20px 50px rgba(0,0,0,0.2)" } },
-                React.createElement("div", { style: { width: 75, height: 75, background: "#fff", color: "#ff6500", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto", borderRadius: 22, fontSize: 40, fontWeight: 800, boxShadow: "0 10px 25px rgba(0,0,0,0.15)" } }, (catalog.shopName || "V").charAt(0)),
-                React.createElement("div", { style: { fontSize: 26, fontWeight: 700, marginTop: 15 } }, catalog.shopName || "Vibe Zone"),
-                React.createElement("div", { style: { marginTop: 30 } },
-                    React.createElement("div", { className: "vz-wifi", style: { fontSize: 60 } }, "\uD83D\uDCF6"),
-                    React.createElement("h2", { style: { fontSize: 22, marginTop: 15 } }, "You're Offline"),
-                    React.createElement("p", { style: { fontSize: 14, lineHeight: 1.6, opacity: 0.9, marginTop: 10 } }, "Internet connection \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u099A\u09CD\u099B\u09C7 \u09A8\u09BE\u0964", React.createElement("br"), "\u0986\u09AA\u09A8\u09BE\u09B0 \u09A8\u09C7\u099F\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u0995 \u099A\u09C7\u0995 \u0995\u09B0\u09C7 \u0986\u09AC\u09BE\u09B0 \u099A\u09C7\u09B7\u09CD\u099F\u09BE \u0995\u09B0\u09C1\u09A8\u0964"),
+        const offC = { bg: "#12121a", bgCard: "#1a1a24", ink: "#f2f0e8", muted: "#9694a8", amber: "#e8a33d", alert: "#e8623d", line: "#2b2b38" };
+        const barHeights = [70, 40, 90, 55, 80, 35, 65, 95, 45, 75, 55, 85, 40, 70, 60];
+        return React.createElement("div", { style: { minHeight: "100vh", background: "radial-gradient(ellipse at 50% -10%, #201f2c 0%, " + offC.bg + " 55%)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Hind Siliguri','Noto Sans Bengali','Segoe UI',system-ui,sans-serif", color: offC.ink, padding: 20 } },
+            React.createElement("div", { style: { width: "min(92vw,380px)" } },
+                React.createElement("div", { style: { background: offC.bgCard, border: "1px solid " + offC.line, borderRadius: 2, padding: "28px 26px 24px", position: "relative", boxShadow: "0 30px 60px -20px rgba(0,0,0,0.6)" } },
+
+                    React.createElement("div", { style: { textAlign: "center", letterSpacing: "0.14em", fontSize: 11, color: offC.muted, textTransform: "uppercase", fontFamily: "'Segoe UI',system-ui,sans-serif" } },
+                        "\u0985\u09B0\u09CD\u09A1\u09BE\u09B0 \u09AA\u09CD\u09B0\u09B8\u09C7\u09B8\u09BF\u0982",
+                        React.createElement("strong", { style: { display: "block", fontSize: 15, letterSpacing: "0.02em", color: offC.ink, marginTop: 4, textTransform: "none" } }, "\u09B8\u0982\u09AF\u09CB\u0997 \u09AF\u09BE\u099A\u09BE\u0987 \u0995\u09B0\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF")),
+
+                    React.createElement("hr", { style: { border: "none", borderTop: "1px dashed " + offC.line, margin: "18px 0" } }),
+
+                    React.createElement("div", { style: { position: "relative", height: 64, margin: "6px 0 4px", display: "flex", alignItems: "flex-end", justifyContent: "center", gap: 3 } },
+                        barHeights.map((h, i) => React.createElement("span", { key: i, style: { display: "block", width: 3, height: h + "%", background: offC.line, borderRadius: 1 } })),
+                        React.createElement("div", { className: "vz-scanline", style: { position: "absolute", left: 0, right: 0, top: 0, height: 2, background: "linear-gradient(90deg, transparent, " + offC.alert + ", transparent)", boxShadow: "0 0 8px " + offC.alert } })),
+                    React.createElement("div", { style: { textAlign: "center", fontFamily: "ui-monospace,Menlo,Consolas,monospace", fontSize: 11, letterSpacing: "0.08em", color: offC.alert, marginTop: 10 } }, "SCAN FAILED \u00B7 NET_ERR_OFFLINE"),
+
+                    React.createElement("h1", { style: { textAlign: "center", fontSize: 21, fontWeight: 700, margin: "18px 0 6px", color: offC.ink } }, "\u0987\u09A8\u09CD\u099F\u09BE\u09B0\u09A8\u09C7\u099F \u09B8\u0982\u09AF\u09CB\u0997 \u09A8\u09C7\u0987"),
+                    React.createElement("p", { style: { textAlign: "center", fontSize: 13.5, lineHeight: 1.6, color: offC.muted, margin: "0 0 20px" } },
+                        "\u0986\u09AA\u09A8\u09BE\u09B0 \u09A1\u09BF\u09AD\u09BE\u0987\u09B8\u09C7 \u0995\u09CB\u09A8\u09CB \u09A8\u09C7\u099F\u0993\u09AF\u09BC\u09BE\u09B0\u09CD\u0995 \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u099A\u09CD\u099B\u09C7 \u09A8\u09BE, \u09A4\u09BE\u0987 \u09AA\u09A3\u09CD\u09AF\u09C7\u09B0 \u09A4\u09BE\u09B2\u09BF\u0995\u09BE \u0993 \u09A6\u09BE\u09AE \u09B2\u09CB\u09A1 \u0995\u09B0\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF\u0964 \u0993\u09AF\u09BC\u09BE\u0987\u09AB\u09BE\u0987 \u09AC\u09BE \u09AE\u09CB\u09AC\u09BE\u0987\u09B2 \u09A1\u09C7\u099F\u09BE \u099A\u09BE\u09B2\u09C1 \u0995\u09B0\u09C7 \u0986\u09AC\u09BE\u09B0 \u099A\u09C7\u09B7\u09CD\u099F\u09BE \u0995\u09B0\u09C1\u09A8\u0964"),
+
+                    React.createElement("div", { style: { fontSize: 12.5, color: offC.muted, marginBottom: 18 } },
+                        React.createElement("div", { style: { display: "flex", justifyContent: "space-between", padding: "5px 0", borderBottom: "1px dotted " + offC.line } },
+                            React.createElement("span", null, "\u09AA\u09A3\u09CD\u09AF\u09C7\u09B0 \u09A4\u09BE\u09B2\u09BF\u0995\u09BE"),
+                            React.createElement("span", { style: { color: offC.ink, fontFamily: "ui-monospace,monospace", fontSize: 11.5 } }, "\u09B2\u09CB\u09A1 \u09B9\u09AF\u09BC\u09A8\u09BF")),
+                        React.createElement("div", { style: { display: "flex", justifyContent: "space-between", padding: "5px 0", borderBottom: "1px dotted " + offC.line } },
+                            React.createElement("span", null, "\u0995\u09BE\u09B0\u09CD\u099F \u09B8\u09BF\u0999\u09CD\u0995"),
+                            React.createElement("span", { style: { color: offC.ink, fontFamily: "ui-monospace,monospace", fontSize: 11.5 } }, "\u09B2\u09CB\u09A1 \u09B9\u09AF\u09BC\u09A8\u09BF")),
+                        React.createElement("div", { style: { display: "flex", justifyContent: "space-between", padding: "5px 0", borderBottom: "1px dotted " + offC.line } },
+                            React.createElement("span", { style: { color: offC.alert } }, "\u09B8\u0982\u09AF\u09CB\u0997"),
+                            React.createElement("span", { style: { color: offC.alert, fontFamily: "ui-monospace,monospace", fontSize: 11.5 } }, "\u09AC\u09BF\u099A\u09CD\u099B\u09BF\u09A8\u09CD\u09A8"))),
+
                     React.createElement("button", {
                         onClick: () => { if (navigator.onLine) { setIsOffline(false); } else { alert("Please check your internet connection"); } },
-                        style: { marginTop: 25, width: "100%", padding: 14, border: "none", borderRadius: 50, background: "#fff", color: "#ff6500", fontSize: 16, fontWeight: 700, cursor: "pointer" }
-                    }, "\u21BB Try Again")),
-                React.createElement("div", { style: { marginTop: 25, fontSize: 12, opacity: 0.7 } }, "Premium Shopping Experience")));
+                        style: { display: "block", width: "100%", padding: "13px 0", background: offC.amber, color: "#1a1200", border: "none", borderRadius: 3, fontFamily: "inherit", fontWeight: 700, fontSize: 14.5, letterSpacing: "0.02em", cursor: "pointer" }
+                    }, "\u0986\u09AC\u09BE\u09B0 \u099A\u09C7\u09B7\u09CD\u099F\u09BE \u0995\u09B0\u09C1\u09A8"),
+
+                    React.createElement("div", { style: { textAlign: "center", fontSize: 11, color: offC.muted, marginTop: 16, letterSpacing: "0.04em" } }, "\u09B8\u0982\u09AF\u09CB\u0997 \u09AB\u09BF\u09B0\u09C7 \u098F\u09B2\u09C7 \u098F\u0987 \u09AA\u09BE\u09A4\u09BE\u099F\u09BF \u09B8\u09CD\u09AC\u09AF\u09BC\u0982\u0995\u09CD\u09B0\u09BF\u09AF\u09BC\u09AD\u09BE\u09AC\u09C7 \u09B0\u09BF\u09AB\u09CD\u09B0\u09C7\u09B6 \u09B9\u09AC\u09C7"))));
     }
     if (loading) {
         return React.createElement("div", { style: { minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: C.vibe, fontFamily: "Arial, sans-serif" } },
