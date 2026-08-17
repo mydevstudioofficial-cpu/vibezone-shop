@@ -481,6 +481,9 @@ function App() {
     const [fbError, setFbError] = useState("");
     const [pageKey, setPageKey] = useState(null);
     const [selectedProductId, setSelectedProductId] = useState(null);
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, [view, selectedProductId]);
     const [isOffline, setIsOffline] = useState(false);
     const [popupClosed, setPopupClosed] = useState(false);
     const [currentUser, setCurrentUser] = useState(undefined);
